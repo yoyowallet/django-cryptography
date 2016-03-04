@@ -1,110 +1,85 @@
-import os
 import pickle
-import struct
-import time
-
-from cryptography.fernet import _MAX_CLOCK_SKEW, InvalidToken, InvalidSignature
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes, padding
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.primitives.hmac import HMAC
-from django.conf import settings
+from django.core import checks, exceptions
 from django.db import models
 from django.utils import six
 
+from .fernet import Fernet
 
-class EncryptedField(models.BinaryField):
+
+class EncryptedField(models.Field):
     # FIXME: `base_field` has issues with date/time fields
-    def __init__(self, base_field, *args, **kwargs):
+    def __init__(self, base_field, **kwargs):
         """
         :type base_field: django.db.models.fields.Field
         :rtype: None
         """
-        backend = kwargs.pop('backend', None)
-        if backend is None:
-            backend = default_backend()
-
-        self.ttl = kwargs.pop('ttl', None)
-        self._signing_key = settings.SECRET_KEY.encode()
-        self._encryption_key = settings.DJANGO_ENCRYPTED_KEY
-        self._backend = backend
+        self._fernet = Fernet()
         self.base_field = base_field
-        self.field = base_field(*args, **kwargs)
-        super(EncryptedField, self).__init__()
+        # self.field = base_field(*args, **kwargs)
+        super(EncryptedField, self).__init__(**kwargs)
 
     def __getattr__(self, item):
-        # Map back to field instance
-        return getattr(self.field, item)
+        # Map back to base_field instance
+        return getattr(self.base_field, item)
+
+    def check(self, **kwargs):
+        errors = super(EncryptedField, self).check(**kwargs)
+        if self.base_field.rel:
+            errors.append(
+                checks.Error(
+                    'Base field for encrypted cannot be a related field.',
+                    hint=None,
+                    obj=self,
+                    id='encrypted.E002'
+                )
+            )
+        else:
+            # Remove the field name checks as they are not needed here.
+            base_errors = self.base_field.check()
+            if base_errors:
+                messages = '\n    '.join('%s (%s)' % (error.msg, error.id) for error in base_errors)
+                errors.append(
+                    checks.Error(
+                        'Base field for encrypted has errors:\n    %s' % messages,
+                        hint=None,
+                        obj=self,
+                        id='encrypted.E001'
+                    )
+                )
+        return errors
+
+    def set_attributes_from_name(self, name):
+        super(EncryptedField, self).set_attributes_from_name(name)
+        self.base_field.set_attributes_from_name(name)
+
+    @property
+    def description(self):
+        return 'Encrypted %s' % self.base_field.description
+
+    def get_internal_type(self):
+        return "BinaryField"
 
     def deconstruct(self):
         name, path, args, kwargs = super(EncryptedField, self).deconstruct()
-        args.append(self.base_field)
+        kwargs.update({
+            'base_field': self.base_field,
+        })
         return name, path, args, kwargs
 
-    def get_db_prep_save(self, value, connection):
-        value = self.field.get_db_prep_save(value, connection)
+    def get_db_prep_value(self, value, connection, prepared=False):
+        value = self.base_field.get_db_prep_value(value, connection, prepared)
         if value is None:
             return value
 
-        current_time = int(time.time())
-        iv = os.urandom(16)
-
-        padder = padding.PKCS7(algorithms.AES.block_size).padder()
-        padded_data = padder.update(pickle.dumps(value)) + padder.finalize()
-        encryptor = Cipher(
-            algorithms.AES(settings.DJANGO_ENCRYPTED_KEY), modes.CBC(iv), self._backend
-        ).encryptor()
-        ciphertext = encryptor.update(padded_data) + encryptor.finalize()
-
-        basic_parts = (
-            b'\x80' + struct.pack(">Q", current_time) + iv + ciphertext
-        )
-
-        h = HMAC(self._signing_key, hashes.SHA256(), backend=self._backend)
-        h.update(basic_parts)
-        hmac = h.finalize()
-
-        return basic_parts + hmac
+        return self._fernet.encrypt(pickle.dumps(value))
 
     def from_db_value(self, value, expression, connection, context):
-        current_time = int(time.time())
+        return pickle.loads(self._fernet.decrypt(value)) if value else value
 
-        if not value or six.indexbytes(value, 0) != 0x80:
-            raise InvalidToken
+    def validate(self, value, model_instance):
+        super(EncryptedField, self).validate(value, model_instance)
+        self.base_field.validate(value, model_instance)
 
-        try:
-            timestamp, = struct.unpack(">Q", value[1:9])
-        except struct.error:
-            raise InvalidToken
-        if self.ttl is not None:
-            if timestamp + self.ttl < current_time:
-                raise InvalidToken
-
-            if current_time + _MAX_CLOCK_SKEW < timestamp:
-                raise InvalidToken
-
-        h = HMAC(self._signing_key, hashes.SHA256(), backend=self._backend)
-        h.update(value[:-32])
-        try:
-            h.verify(value[-32:])
-        except InvalidSignature:
-            raise InvalidToken
-
-        iv = value[9:25]
-        ciphertext = value[25:-32]
-        decryptor = Cipher(
-            algorithms.AES(settings.DJANGO_ENCRYPTED_KEY), modes.CBC(iv), self._backend
-        ).decryptor()
-        plaintext_padded = decryptor.update(ciphertext)
-        try:
-            plaintext_padded += decryptor.finalize()
-        except ValueError:
-            raise InvalidToken
-        unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
-
-        unpadded = unpadder.update(plaintext_padded)
-        try:
-            unpadded += unpadder.finalize()
-        except ValueError:
-            raise InvalidToken
-        return pickle.loads(unpadded)
+    def run_validators(self, value):
+        super(EncryptedField, self).run_validators(value)
+        self.base_field.run_validators(value)
