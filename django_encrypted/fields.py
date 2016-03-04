@@ -7,7 +7,6 @@ from .fernet import Fernet
 
 
 class EncryptedField(models.Field):
-    # FIXME: `base_field` has issues with date/time fields
     def __init__(self, base_field, **kwargs):
         """
         :type base_field: django.db.models.fields.Field
@@ -18,9 +17,9 @@ class EncryptedField(models.Field):
         # self.field = base_field(*args, **kwargs)
         super(EncryptedField, self).__init__(**kwargs)
 
-    def __getattr__(self, item):
-        # Map back to base_field instance
-        return getattr(self.base_field, item)
+    # def __getattr__(self, item):
+    #     # Map back to base_field instance
+    #     return getattr(self.base_field, item)
 
     def check(self, **kwargs):
         errors = super(EncryptedField, self).check(**kwargs)
@@ -66,12 +65,9 @@ class EncryptedField(models.Field):
         })
         return name, path, args, kwargs
 
-    def get_db_prep_value(self, value, connection, prepared=False):
-        value = self.base_field.get_db_prep_value(value, connection, prepared)
-        if value is None:
-            return value
-
-        return self._fernet.encrypt(pickle.dumps(value))
+    def pre_save(self, model_instance, add):
+        return self._fernet.encrypt(
+            pickle.dumps(self.base_field.pre_save(model_instance, add)))
 
     def from_db_value(self, value, expression, connection, context):
         return pickle.loads(self._fernet.decrypt(value)) if value else value

@@ -24,4 +24,4 @@ class EncryptedFieldTestCase(TestCase):
         self.assertEqual(obj.char, obj.encrypted_char)
         self.assertEqual(obj.boolean, obj.encrypted_boolean)
         self.assertEqual(obj.integer, obj.encrypted_integer)
-        # self.assertEqual(obj.datetime, obj.encrypted_datetime)
+        self.assertEqual(obj.datetime, obj.encrypted_datetime)

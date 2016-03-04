@@ -10,5 +10,5 @@ class Test(models.Model):
     encrypted_boolean = EncryptedField(models.BooleanField(_('boolean')))
     integer = models.IntegerField(_('integer'))
     encrypted_integer = EncryptedField(models.IntegerField(_('integer')))
-    datetime = models.DateTimeField(_('datetime'), auto_now=True)
-    # encrypted_datetime = EncryptedField(models.DateTimeField(_('datetime'), auto_now=True))
+    datetime = models.DateField(_('datetime'), auto_now=True)
+    encrypted_datetime = EncryptedField(models.DateField(_('datetime'), auto_now=True))
