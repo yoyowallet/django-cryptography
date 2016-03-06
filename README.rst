@@ -1,4 +1,4 @@
-Django encrypted
-================
+Django Cryptography
+===================
 
-Symmetrical encryption tooling for Django
+Django wrapper for python cryptography
