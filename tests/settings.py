@@ -17,3 +17,5 @@ INSTALLED_APPS = [
     'django_cryptography',
     'tests',
 ]
+
+SIGNING_BACKEND = 'django_cryptography.core.signing.TimestampSigner'

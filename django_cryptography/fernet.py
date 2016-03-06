@@ -2,7 +2,6 @@ import struct
 import time
 
 from cryptography import fernet
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.hmac import HMAC
@@ -13,7 +12,7 @@ from django.utils import six
 class Fernet(fernet.Fernet):
     def __init__(self, key=None, backend=None):
         if backend is None:
-            backend = default_backend()
+            backend = settings.CRYPTOGRAPHY_BACKEND
 
         self._signing_key = settings.SECRET_KEY.encode()
         self._encryption_key = key or settings.CRYPTOGRAPHY_KEY

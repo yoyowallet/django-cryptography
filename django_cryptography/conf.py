@@ -17,8 +17,9 @@ kdf = pbkdf2.PBKDF2HMAC(
 
 
 class CryptographyConf(AppConf):
+    BACKEND = default_backend()
+    DIGEST = hashes.SHA256()
     KEY = None
-    HASH = hashes.SHA256()
 
     class Meta:
         prefix = 'cryptography'

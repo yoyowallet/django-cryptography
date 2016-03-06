@@ -1,20 +1,22 @@
-from __future__ import unicode_literals
-
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import constant_time, hashes
 from cryptography.hazmat.primitives.hmac import HMAC
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from django.conf import settings
-from django.core.signing import BadSignature, SignatureExpired
-from django.utils.crypto import constant_time_compare
-from django.utils.encoding import force_bytes, force_str, force_text
+from django.utils import crypto
+from django.utils.encoding import force_bytes
 
 
 def salted_hmac(key_salt, value, secret=None):
     """
-    Returns the HMAC-SHA1 of 'value', using a key generated from key_salt and a
+    Returns the HMAC-HASH of 'value', using a key generated from key_salt and a
     secret (which defaults to settings.SECRET_KEY).
 
     A different key_salt should be passed in for every application of HMAC.
+
+    :type key_salt: any
+    :type value: any
+    :type secret: any
+    :rtype: HMAC
     """
     if secret is None:
         secret = settings.SECRET_KEY
@@ -25,7 +27,8 @@ def salted_hmac(key_salt, value, secret=None):
     # We need to generate a derived key from our base key.  We can do this by
     # passing the key_salt and our base key through a pseudo-random function and
     # SHA1 works nicely.
-    digest = hashes.Hash(settings.CRYPTOGRAPHY_HASH, backend=default_backend())
+    digest = hashes.Hash(settings.CRYPTOGRAPHY_DIGEST,
+                         backend=settings.CRYPTOGRAPHY_BACKEND)
     digest.update(key_salt + secret)
     key = digest.finalize()
 
@@ -33,37 +36,43 @@ def salted_hmac(key_salt, value, secret=None):
     # line is redundant and could be replaced by key = key_salt + secret, since
     # the hmac module does the same thing for keys longer than the block size.
     # However, we need to ensure that we *always* do this.
-    h = HMAC(key, settings.CRYPTOGRAPHY_HASH, backend=default_backend())
+    h = HMAC(key, settings.CRYPTOGRAPHY_DIGEST,
+             backend=settings.CRYPTOGRAPHY_BACKEND)
     h.update(force_bytes(value))
     return h
 
 
-class Signer(object):
+get_random_string = crypto.get_random_string
 
-    def __init__(self, key=None, sep=':', salt=None):
-        # Use of native strings in all versions of Python
-        self.sep = force_str(sep)
-        self.key = force_bytes(key or settings.SECRET_KEY)
-        self.salt = force_bytes(salt or
-            '%s.%s' % (self.__class__.__module__, self.__class__.__name__))
 
-    def signature(self, value):
-        signature = base64_hmac(self.salt + b'signer', value, self.key)
-        h = HMAC(self.salt + b'signer' + self.key, hashes.SHA256(), backend=self._backend)
-        h.update(force_bytes(value))
-        hmac = h.finalize()
-        # Convert the signature from bytes to str only on Python 3
-        return force_str(signature)
+def constant_time_compare(val1, val2):
+    """
+    :type val1: any
+    :type val2: any
+    :rtype: bool
+    """
+    return constant_time.bytes_eq(force_bytes(val1), force_bytes(val2))
 
-    def sign(self, value):
-        value = force_str(value)
-        return str('%s%s%s') % (value, self.sep, self.signature(value))
 
-    def unsign(self, signed_value):
-        signed_value = force_str(signed_value)
-        if self.sep not in signed_value:
-            raise BadSignature('No "%s" found in value' % self.sep)
-        value, sig = signed_value.rsplit(self.sep, 1)
-        if constant_time_compare(sig, self.signature(value)):
-            return force_text(value)
-        raise BadSignature('Signature "%s" does not match' % sig)
+def pbkdf2(password, salt, iterations, dklen=0, digest=None):
+    """
+    Implements PBKDF2 with the same API as Django's existing
+    implementation, using cryptography.
+
+    :type password: any
+    :type salt: any
+    :type iterations: int
+    :type dklen: int
+    :type digest: cryptography.hazmat.primitives.hashes.HashAlgorithm
+    """
+    if digest is None:
+        digest = settings.CRYPTOGRAPHY_DIGEST
+    if not dklen:
+        dklen = digest.digest_size
+    password = force_bytes(password)
+    salt = force_bytes(salt)
+    kdf = PBKDF2HMAC(
+        algorithm=digest, length=dklen, salt=salt,
+        iterations=iterations, backend=settings.CRYPTOGRAPHY_BACKEND
+    )
+    return kdf.derive(password)
