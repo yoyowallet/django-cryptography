@@ -1,9 +1,12 @@
-import pickle
-from django.core import checks, exceptions
+from django.core import checks
 from django.db import models
-from django.utils import six
 
-from .fernet import Fernet
+from django_cryptography.utils.crypto import Fernet
+
+try:
+    from django.utils.six.moves import cPickle as pickle
+except ImportError:
+    import pickle
 
 
 class EncryptedField(models.Field):

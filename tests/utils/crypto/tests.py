@@ -2,13 +2,15 @@ import binascii
 import unittest
 
 from cryptography.hazmat.primitives import hashes
+from django.conf import settings
 from django.test import override_settings
+from django.test.utils import freeze_time
 from django.utils.crypto import (
     pbkdf2 as django_pbkdf2, salted_hmac as django_salted_hmac
 )
 
 from django_cryptography.utils.crypto import (
-    constant_time_compare, pbkdf2, salted_hmac,
+    Fernet, constant_time_compare, pbkdf2, salted_hmac,
 )
 
 
@@ -161,3 +163,22 @@ class TestUtilsCryptoPBKDF2(unittest.TestCase):
         for vector in self.rfc_vectors:
             self.assertEqual(pbkdf2(**vector['args']),
                              django_pbkdf2(**vector['args']))
+
+
+class TestUtilsCryptoFernet(unittest.TestCase):
+    def test_cryptography_key(self):
+        self.assertEqual(settings.CRYPTOGRAPHY_KEY,
+                         b'\xdf\xff\x9f\xac\xf7\x9a\x90\xda\x92\xc06\xc9r-\x16'
+                         b'0b~\xde\xf8\xb7\x95\xdd}\xf0}\xb0\x07\xc3l\xb1]')
+
+    def test_encrypt_decrypt(self):
+        value = b'hello'
+        iv = b'0123456789abcdef'
+        data = (b'\x80\x00\x00\x00\x00\x07[\xcd\x150123456789abcdef\xcc\xe6&,'
+                b'\x16\x9daly6"eEO\x19\xc4%\xe7\x8e\'b\x88\x1c\x15_\xe1\x9f'
+                b'\xce\x914\t\xdb\x8cA\x04\xebjk\x83\xc5\xf8%\xdb,\xa6\x16'
+                b'\x1d\x07')
+        with freeze_time(123456789):
+            fernet = Fernet()
+            self.assertEqual(fernet._encrypt_from_parts(value, iv), data)
+            self.assertEqual(fernet.decrypt(data), value)

@@ -1,9 +1,16 @@
-from cryptography.hazmat.primitives import constant_time, hashes
+import os
+
+from cryptography.hazmat.primitives import constant_time, hashes, padding
+from cryptography.hazmat.primitives.ciphers import algorithms, Cipher, modes
 from cryptography.hazmat.primitives.hmac import HMAC
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from django.conf import settings
 from django.utils import crypto
 from django.utils.encoding import force_bytes
+
+
+class InvalidToken(Exception):
+    pass
 
 
 def salted_hmac(key_salt, value, secret=None):
@@ -76,3 +83,72 @@ def pbkdf2(password, salt, iterations, dklen=0, digest=None):
         iterations=iterations, backend=settings.CRYPTOGRAPHY_BACKEND
     )
     return kdf.derive(password)
+
+
+class Fernet(object):
+    """
+    This is a modified version of the Fernet encryption algorithm from
+    the Python Cryptography library. The main change is the allowance
+    of varied length cryptographic keys from the base 128-bit. There is
+    also an emphasis on using Django's settings system for sane defaults.
+    """
+
+    def __init__(self, key=None, signer=None):
+        if signer is None:
+            from ..core.signing import FernetSigner
+            signer = FernetSigner()
+        self._backend = settings.CRYPTOGRAPHY_BACKEND
+        self._encryption_key = key or settings.CRYPTOGRAPHY_KEY
+        self._signer = signer
+
+    def encrypt(self, data):
+        """
+        :type data: any
+        :rtype: any
+        """
+        data = force_bytes(data)
+        iv = os.urandom(16)
+        return self._encrypt_from_parts(data, iv)
+
+    def _encrypt_from_parts(self, data, iv):
+        """
+        :type data: bytes
+        :type iv: bytes
+        :rtype: any
+        """
+        padder = padding.PKCS7(algorithms.AES.block_size).padder()
+        padded_data = padder.update(data) + padder.finalize()
+        encryptor = Cipher(
+            algorithms.AES(self._encryption_key), modes.CBC(iv), self._backend
+        ).encryptor()
+        ciphertext = encryptor.update(padded_data) + encryptor.finalize()
+
+        return self._signer.sign(iv + ciphertext)
+
+    def decrypt(self, data, ttl=None):
+        """
+        :type data: bytes
+        :type ttl: int
+        :rtype: bytes
+        """
+        data = self._signer.unsign(data, ttl)
+
+        iv = data[:16]
+        ciphertext = data[16:]
+        decryptor = Cipher(
+            algorithms.AES(self._encryption_key), modes.CBC(iv), self._backend
+        ).decryptor()
+        plaintext_padded = decryptor.update(ciphertext)
+        try:
+            plaintext_padded += decryptor.finalize()
+        except ValueError:
+            raise InvalidToken
+
+        # Remove padding
+        unpadder = padding.PKCS7(algorithms.AES.block_size).unpadder()
+        unpadded = unpadder.update(plaintext_padded)
+        try:
+            unpadded += unpadder.finalize()
+        except ValueError:
+            raise InvalidToken
+        return unpadded
