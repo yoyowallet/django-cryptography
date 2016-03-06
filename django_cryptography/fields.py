@@ -1,12 +1,15 @@
 from django.core import checks
 from django.db import models
 
+from django_cryptography.core.signing import SignatureExpired
 from django_cryptography.utils.crypto import Fernet
 
 try:
     from django.utils.six.moves import cPickle as pickle
 except ImportError:
     import pickle
+
+Expired = object()
 
 
 class EncryptedField(models.Field):
@@ -15,9 +18,12 @@ class EncryptedField(models.Field):
         :type base_field: django.db.models.fields.Field
         :rtype: None
         """
-        self._fernet = Fernet()
+        key = kwargs.pop('key', None)
+        ttl = kwargs.pop('ttl', None)
+
+        self._fernet = Fernet(key)
+        self._ttl = ttl
         self.base_field = base_field
-        # self.field = base_field(*args, **kwargs)
         super(EncryptedField, self).__init__(**kwargs)
 
     # def __getattr__(self, item):
@@ -73,7 +79,12 @@ class EncryptedField(models.Field):
             pickle.dumps(self.base_field.pre_save(model_instance, add)))
 
     def from_db_value(self, value, expression, connection, context):
-        return pickle.loads(self._fernet.decrypt(value)) if value else value
+        if value:
+            try:
+                return pickle.loads(self._fernet.decrypt(value, self._ttl))
+            except SignatureExpired:
+                return Expired
+        return value
 
     def validate(self, value, model_instance):
         super(EncryptedField, self).validate(value, model_instance)
