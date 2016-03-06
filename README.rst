@@ -1,4 +1,6 @@
 Django Cryptography
 ===================
 
-Django wrapper for python cryptography
+Django wrapper for Cryptography_
+
+.. _Cryptography: https://cryptography.io/
