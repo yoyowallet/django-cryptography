@@ -9,7 +9,7 @@ from django.utils.six import binary_type
 from .models import Test
 
 
-class EncryptedFieldTestCase(TestCase):
+class TestEncryptedField(TestCase):
     def test_settings_has_key(self):
         key = settings.CRYPTOGRAPHY_KEY
         self.assertIsNotNone(key)

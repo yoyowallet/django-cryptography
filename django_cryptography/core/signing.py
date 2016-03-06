@@ -2,16 +2,18 @@ from __future__ import unicode_literals
 
 import datetime
 import re
+import struct
 import time
 import zlib
 
 from django.conf import settings
 from django.core import signing
-from django.utils import baseconv
+from django.utils import baseconv, six
 from django.utils.encoding import force_bytes, force_str, force_text
 
 from ..utils.crypto import constant_time_compare, salted_hmac
 
+_MAX_CLOCK_SKEW = 60
 _SEP_UNSAFE = re.compile(r'^[A-z0-9-_=]*$')
 
 BadSignature = signing.BadSignature
@@ -114,6 +116,30 @@ class Signer(object):
         raise BadSignature('Signature "%s" does not match' % sig)
 
 
+class BytesSigner(object):
+
+    def __init__(self, key=None, salt=None):
+        digest = settings.CRYPTOGRAPHY_DIGEST
+        self._digest_size = digest.digest_size
+        self.key = key or settings.SECRET_KEY
+        self.salt = force_str(salt or
+            '%s.%s' % (self.__class__.__module__, self.__class__.__name__))
+
+    def signature(self, value):
+        return salted_hmac(self.salt + 'signer', value, self.key).finalize()
+
+    def sign(self, value):
+        value = force_bytes(value)
+        return value + self.signature(value)
+
+    def unsign(self, signed_value):
+        value, sig = (signed_value[:-self._digest_size],
+                      signed_value[-self._digest_size:])
+        if constant_time_compare(sig, self.signature(value)):
+            return value
+        raise BadSignature('Signature "%s" does not match' % sig)
+
+
 class TimestampSigner(Signer):
 
     def timestamp(self):
@@ -141,3 +167,36 @@ class TimestampSigner(Signer):
                 raise SignatureExpired(
                     'Signature age %s > %s seconds' % (age, max_age))
         return value
+
+
+class FernetSigner(BytesSigner):
+
+    def timestamp(self):
+        return struct.pack(">Q", int(time.time()))
+
+    def sign(self, value):
+        return super(FernetSigner, self).sign(
+            b'\x80' + self.timestamp() + force_bytes(value)
+        )
+
+    def unsign(self, value, max_age=None):
+        """
+        Retrieve original value and check it wasn't signed more
+        than max_age seconds ago.
+        """
+        if not value or six.indexbytes(value, 0) != 0x80:
+            raise BadSignature('Signature is not supported')
+        result = super(FernetSigner, self).unsign(value)
+        try:
+            timestamp, = struct.unpack(">Q", result[1:9])
+        except struct.error:
+            raise BadSignature('Signature is not valid')
+        if max_age is not None:
+            if isinstance(max_age, datetime.timedelta):
+                max_age = max_age.total_seconds()
+            # Check timestamp is not older than max_age
+            age = time.time() - timestamp
+            if age > max_age + _MAX_CLOCK_SKEW:
+                raise SignatureExpired(
+                    'Signature age %s > %s seconds' % (age, max_age))
+        return result[9:]
