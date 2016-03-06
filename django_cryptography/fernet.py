@@ -16,7 +16,7 @@ class Fernet(fernet.Fernet):
             backend = default_backend()
 
         self._signing_key = settings.SECRET_KEY.encode()
-        self._encryption_key = key or settings.DJANGO_ENCRYPTED_KEY
+        self._encryption_key = key or settings.CRYPTOGRAPHY_KEY
         self._backend = backend
 
     def _encrypt_from_parts(self, data, current_time, iv):

@@ -8,7 +8,7 @@ from setuptools.command.test import test as TestCommand
 
 EXCLUDE_FROM_PACKAGES = ['tests']
 
-version = __import__('django_encrypted').__version__
+version = __import__('django_cryptography').__version__
 
 
 # adapted from jaraco.classes.properties:NonDataProperty
@@ -140,10 +140,10 @@ class DjangoTest(TestCommand):
 
 
 setup(
-    name='django-encrypted',
+    name='django-cryptography',
     version=version,
-    description='Symmetrical encryption tooling for Django',
-    url='https://github.com/georgemarshall/django-encrypted',
+    description='Django wrapper for python cryptography',
+    url='https://github.com/georgemarshall/django-cryptography',
     author='George Marshall',
     author_email='george@georgemarshall.name',
     license='BSD',

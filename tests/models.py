@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-from django_encrypted.fields import EncryptedField
+from django_cryptography.fields import EncryptedField
 
 
 class Test(models.Model):

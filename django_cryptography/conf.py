@@ -16,8 +16,12 @@ kdf = pbkdf2.PBKDF2HMAC(
 )
 
 
-class EncryptedConf(AppConf):
+class CryptographyConf(AppConf):
     KEY = None
+    HASH = hashes.SHA256()
+
+    class Meta:
+        prefix = 'cryptography'
 
     def configure_key(self, value):
         return kdf.derive(force_bytes(value or settings.SECRET_KEY))

@@ -14,6 +14,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.admin.apps.SimpleAdminConfig',
     'django.contrib.staticfiles',
-    'django_encrypted',
+    'django_cryptography',
     'tests',
 ]

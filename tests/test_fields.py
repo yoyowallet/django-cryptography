@@ -11,7 +11,7 @@ from .models import Test
 
 class EncryptedFieldTestCase(TestCase):
     def test_settings_has_key(self):
-        key = settings.DJANGO_ENCRYPTED_KEY
+        key = settings.CRYPTOGRAPHY_KEY
         self.assertIsNotNone(key)
         self.assertIsInstance(key, binary_type)
 

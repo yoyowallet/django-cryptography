@@ -41,11 +41,12 @@ def get_main_version(version=None):
 
 def get_complete_version(version=None):
     """
-    Returns a tuple of the django_encrypted version. If version argument is
-    non-empty, then checks for correctness of the tuple provided.
+    Returns a tuple of the django_cryptography version. If version
+    argument is non-empty, then checks for correctness of the tuple
+    provided.
     """
     if version is None:
-        from django_encrypted import VERSION as version
+        from django_cryptography import VERSION as version
     else:
         assert len(version) == 5
         assert version[3] in ('alpha', 'beta', 'rc', 'final')
