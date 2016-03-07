@@ -9,8 +9,9 @@ from django.utils.crypto import (
     pbkdf2 as django_pbkdf2, salted_hmac as django_salted_hmac
 )
 
+from django_cryptography.core import signing
 from django_cryptography.utils.crypto import (
-    FernetBytes, constant_time_compare, pbkdf2, salted_hmac,
+    Fernet, FernetBytes, constant_time_compare, pbkdf2, salted_hmac,
 )
 
 
@@ -181,3 +182,16 @@ class TestUtilsCryptoFernet(unittest.TestCase):
             fernet = FernetBytes()
             self.assertEqual(fernet._encrypt_from_parts(value, iv), data)
             self.assertEqual(fernet.decrypt(data), value)
+
+    def test_standard_fernet(self):
+        key = 'cw_0x689RpI-jtRR7oE8h_eQsKImvJapLeSbXpwF4e4='
+        data = ('gAAAAAAdwJ6wAAECAwQFBgcICQoLDA0ODy021cpGVWKZ_eEwCG'
+                'M4BLLF_5CV9dOPmrhuVUPgJobwOz7JcbmrR64jVmpU4IwqDA==')
+        with freeze_time(499162800):
+            fernet = Fernet(key)
+            self.assertEqual(fernet.decrypt(data, 60), b'hello')
+
+        with freeze_time(123456789):
+            fernet = Fernet(key)
+            with self.assertRaises(signing.SignatureExpired):
+                self.assertEqual(fernet.decrypt(data, 60), b'hello')

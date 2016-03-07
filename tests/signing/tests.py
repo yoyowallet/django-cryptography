@@ -269,6 +269,10 @@ class TestFernetSigner(SimpleTestCase):
             with self.assertRaises(signing.SignatureExpired):
                 signer.unsign(ts, ttl=10)
 
+        with freeze_time(123456778 - signing._MAX_CLOCK_SKEW):
+            with self.assertRaises(signing.SignatureExpired):
+                signer.unsign(ts, ttl=10)
+
     def test_bad_payload(self):
         signer = signing.FernetSigner('predictable-key')
         value = signer.sign('hello')

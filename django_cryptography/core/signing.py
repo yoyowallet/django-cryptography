@@ -218,7 +218,7 @@ class FernetSigner(Signer):
             if isinstance(ttl, datetime.timedelta):
                 ttl = ttl.total_seconds()
             # Check timestamp is not older than ttl
-            age = time.time() - timestamp
+            age = abs(time.time() - timestamp)
             if age > ttl + _MAX_CLOCK_SKEW:
                 raise SignatureExpired(
                     'Signature age %s > %s seconds' % (age, ttl))
