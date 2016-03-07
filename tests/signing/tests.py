@@ -128,6 +128,25 @@ class TestSigner(SimpleTestCase):
                 signing.Signer(sep=sep)
 
 
+class TestTimestampSigner(SimpleTestCase):
+
+    def test_timestamp_signer(self):
+        value = 'hello'
+        with freeze_time(123456789):
+            signer = signing.TimestampSigner('predictable-key')
+            ts = signer.sign(value)
+            self.assertNotEqual(ts,
+                signing.Signer('predictable-key').sign(value))
+            self.assertEqual(signer.unsign(ts), value)
+
+        with freeze_time(123456800):
+            self.assertEqual(signer.unsign(ts, max_age=12), value)
+            # max_age parameter can also accept a datetime.timedelta object
+            self.assertEqual(signer.unsign(ts, max_age=datetime.timedelta(seconds=11)), value)
+            with self.assertRaises(signing.SignatureExpired):
+                signer.unsign(ts, max_age=10)
+
+
 class TestBytesSigner(SimpleTestCase):
 
     def test_signature(self):
@@ -233,25 +252,6 @@ class TestBytesSigner(SimpleTestCase):
                          b'\xd3\xf4', s.sign('foo'))
 
 
-class TestTimestampSigner(SimpleTestCase):
-
-    def test_timestamp_signer(self):
-        value = 'hello'
-        with freeze_time(123456789):
-            signer = signing.TimestampSigner('predictable-key')
-            ts = signer.sign(value)
-            self.assertNotEqual(ts,
-                signing.Signer('predictable-key').sign(value))
-            self.assertEqual(signer.unsign(ts), value)
-
-        with freeze_time(123456800):
-            self.assertEqual(signer.unsign(ts, max_age=12), value)
-            # max_age parameter can also accept a datetime.timedelta object
-            self.assertEqual(signer.unsign(ts, max_age=datetime.timedelta(seconds=11)), value)
-            with self.assertRaises(signing.SignatureExpired):
-                signer.unsign(ts, max_age=10)
-
-
 class TestFernetSigner(SimpleTestCase):
 
     def test_fernet_signer(self):
@@ -259,16 +259,27 @@ class TestFernetSigner(SimpleTestCase):
         with freeze_time(123456789):
             signer = signing.FernetSigner('predictable-key')
             ts = signer.sign(value)
-            self.assertNotEqual(ts,
-                signing.BytesSigner('predictable-key').sign(value))
             self.assertEqual(signer.unsign(ts), value)
 
         with freeze_time(123456800 + signing._MAX_CLOCK_SKEW):
-            self.assertEqual(signer.unsign(ts, max_age=12), value)
+            self.assertEqual(signer.unsign(ts, ttl=12), value)
             # max_age parameter can also accept a datetime.timedelta object
-            self.assertEqual(signer.unsign(ts, max_age=datetime.timedelta(seconds=11)), value)
+            self.assertEqual(
+                signer.unsign(ts, ttl=datetime.timedelta(seconds=11)), value)
             with self.assertRaises(signing.SignatureExpired):
-                signer.unsign(ts, max_age=10)
+                signer.unsign(ts, ttl=10)
+
+    def test_bad_payload(self):
+        signer = signing.FernetSigner('predictable-key')
+        value = signer.sign('hello')
+
+        with self.assertRaises(signing.BadSignature):
+            # Break the version
+            signer.unsign(b' ' + value[1:])
+
+        with self.assertRaises(signing.BadSignature):
+            # Break the signature
+            signer.unsign(value[:-1] + b' ')
 
     def test_unsupported(self):
         value = b'hello'
@@ -276,11 +287,3 @@ class TestFernetSigner(SimpleTestCase):
 
         with self.assertRaises(signing.BadSignature):
             signer.unsign(value)
-
-    def test_bad_unpack(self):
-        value = b'\x80hello'
-        signer = signing.FernetSigner('predictable-key')
-        bad_sig = signing.BytesSigner(signer.key, signer.salt).sign(value)
-
-        with self.assertRaises(signing.BadSignature):
-            signer.unsign(bad_sig)

@@ -6,6 +6,9 @@ import struct
 import time
 import zlib
 
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.hmac import HMAC
 from django.conf import settings
 from django.core import signing
 from django.utils import baseconv, six
@@ -84,7 +87,6 @@ def loads(s, key=None, salt='django.core.signing', serializer=JSONSerializer, ma
 
 
 class Signer(object):
-
     def __init__(self, key=None, sep=':', salt=None):
         # Use of native strings in all versions of Python
         self.key = key or settings.SECRET_KEY
@@ -95,7 +97,7 @@ class Signer(object):
                 'only A-z0-9-_=)' % sep,
             )
         self.salt = force_str(salt or
-            '%s.%s' % (self.__class__.__module__, self.__class__.__name__))
+                              '%s.%s' % (self.__class__.__module__, self.__class__.__name__))
 
     def signature(self, value):
         signature = base64_hmac(self.salt + 'signer', value, self.key)
@@ -116,32 +118,7 @@ class Signer(object):
         raise BadSignature('Signature "%s" does not match' % sig)
 
 
-class BytesSigner(object):
-
-    def __init__(self, key=None, salt=None):
-        digest = settings.CRYPTOGRAPHY_DIGEST
-        self._digest_size = digest.digest_size
-        self.key = key or settings.SECRET_KEY
-        self.salt = force_str(salt or
-            '%s.%s' % (self.__class__.__module__, self.__class__.__name__))
-
-    def signature(self, value):
-        return salted_hmac(self.salt + 'signer', value, self.key).finalize()
-
-    def sign(self, value):
-        value = force_bytes(value)
-        return value + self.signature(value)
-
-    def unsign(self, signed_value):
-        value, sig = (signed_value[:-self._digest_size],
-                      signed_value[-self._digest_size:])
-        if constant_time_compare(sig, self.signature(value)):
-            return value
-        raise BadSignature('Signature "%s" does not match' % sig)
-
-
 class TimestampSigner(Signer):
-
     def timestamp(self):
         return baseconv.base62.encode(int(time.time()))
 
@@ -169,34 +146,84 @@ class TimestampSigner(Signer):
         return value
 
 
-class FernetSigner(BytesSigner):
+class BytesSigner(Signer):
+    def __init__(self, key=None, salt=None):
+        digest = settings.CRYPTOGRAPHY_DIGEST
+        self._digest_size = digest.digest_size
+        self.key = key or settings.SECRET_KEY
+        self.salt = force_str(salt or
+            '%s.%s' % (self.__class__.__module__, self.__class__.__name__))
 
-    def timestamp(self):
-        return struct.pack(">Q", int(time.time()))
+    def signature(self, value):
+        return salted_hmac(self.salt + 'signer', value, self.key).finalize()
 
     def sign(self, value):
-        return super(FernetSigner, self).sign(
-            b'\x80' + self.timestamp() + force_bytes(value)
-        )
+        value = force_bytes(value)
+        return value + self.signature(value)
 
-    def unsign(self, value, max_age=None):
+    def unsign(self, signed_value):
+        value, sig = (signed_value[:-self._digest_size],
+                      signed_value[-self._digest_size:])
+        if constant_time_compare(sig, self.signature(value)):
+            return value
+        raise BadSignature('Signature "%s" does not match' % sig)
+
+
+class FernetSigner(Signer):
+    version = six.int2byte(0x80)
+
+    def __init__(self, key=None):
+        """
+        :type key: any
+        :rtype: None
+        """
+        self.digest = hashes.SHA256()
+        self.key = force_bytes(key or settings.SECRET_KEY)
+
+    def signature(self, value):
+        """
+        :type value: any
+        :rtype: HMAC
+        """
+        h = HMAC(self.key, self.digest, backend=settings.CRYPTOGRAPHY_BACKEND)
+        h.update(force_bytes(value))
+        return h
+
+    def sign(self, value):
+        """
+        :type value: any
+        :rtype: bytes
+        """
+        payload = struct.pack('>cQ', self.version, int(time.time()))
+        payload += force_bytes(value)
+        return payload + self.signature(payload).finalize()
+
+    def unsign(self, signed_value, ttl=None):
         """
         Retrieve original value and check it wasn't signed more
         than max_age seconds ago.
+
+        :type signed_value: bytes
+        :type ttl: int | datetime.timedelta
         """
-        if not value or six.indexbytes(value, 0) != 0x80:
-            raise BadSignature('Signature is not supported')
-        result = super(FernetSigner, self).unsign(value)
+        h_size, d_size = struct.calcsize('>cQ'), self.digest.digest_size
+        fmt = '>cQ%ds%ds' % (len(signed_value) - h_size - d_size, d_size)
         try:
-            timestamp, = struct.unpack(">Q", result[1:9])
+            version, timestamp, value, sig = struct.unpack(fmt, signed_value)
         except struct.error:
             raise BadSignature('Signature is not valid')
-        if max_age is not None:
-            if isinstance(max_age, datetime.timedelta):
-                max_age = max_age.total_seconds()
-            # Check timestamp is not older than max_age
+        if version != self.version:
+            raise BadSignature('Signature version not supported')
+        if ttl is not None:
+            if isinstance(ttl, datetime.timedelta):
+                ttl = ttl.total_seconds()
+            # Check timestamp is not older than ttl
             age = time.time() - timestamp
-            if age > max_age + _MAX_CLOCK_SKEW:
+            if age > ttl + _MAX_CLOCK_SKEW:
                 raise SignatureExpired(
-                    'Signature age %s > %s seconds' % (age, max_age))
-        return result[9:]
+                    'Signature age %s > %s seconds' % (age, ttl))
+        try:
+            self.signature(signed_value[:-d_size]).verify(sig)
+        except InvalidSignature:
+            raise BadSignature('Signature "%s" does not match' % sig)
+        return value

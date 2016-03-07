@@ -10,7 +10,7 @@ from django.utils.crypto import (
 )
 
 from django_cryptography.utils.crypto import (
-    Fernet, constant_time_compare, pbkdf2, salted_hmac,
+    FernetBytes, constant_time_compare, pbkdf2, salted_hmac,
 )
 
 
@@ -175,10 +175,9 @@ class TestUtilsCryptoFernet(unittest.TestCase):
         value = b'hello'
         iv = b'0123456789abcdef'
         data = (b'\x80\x00\x00\x00\x00\x07[\xcd\x150123456789abcdef\xcc\xe6&,'
-                b'\x16\x9daly6"eEO\x19\xc4%\xe7\x8e\'b\x88\x1c\x15_\xe1\x9f'
-                b'\xce\x914\t\xdb\x8cA\x04\xebjk\x83\xc5\xf8%\xdb,\xa6\x16'
-                b'\x1d\x07')
+                b'\x16\x9daly6"eEO\x19\xc4\x1dg\xd4j\x17\xc7\xd8\xbeC\xd1\x87'
+                b'\x8c\xd7\xc6W\xbe\\\x95Z\xcf\xbf\xd8Tts\xf7\x18u\xfd\x06RT')
         with freeze_time(123456789):
-            fernet = Fernet()
+            fernet = FernetBytes()
             self.assertEqual(fernet._encrypt_from_parts(value, iv), data)
             self.assertEqual(fernet.decrypt(data), value)

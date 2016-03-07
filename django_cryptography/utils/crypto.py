@@ -1,3 +1,4 @@
+import base64
 import os
 
 from cryptography.hazmat.primitives import constant_time, hashes, padding
@@ -85,7 +86,7 @@ def pbkdf2(password, salt, iterations, dklen=0, digest=None):
     return kdf.derive(password)
 
 
-class Fernet(object):
+class FernetBytes(object):
     """
     This is a modified version of the Fernet encryption algorithm from
     the Python Cryptography library. The main change is the allowance
@@ -152,3 +153,25 @@ class Fernet(object):
         except ValueError:
             raise InvalidToken
         return unpadded
+
+
+class Fernet(FernetBytes):
+    def __init__(self, key):
+        key = base64.urlsafe_b64decode(key)
+        if len(key) != 32:
+            raise ValueError(
+                "Fernet key must be 32 url-safe base64-encoded bytes."
+            )
+        from ..core.signing import FernetSigner
+        super(Fernet, self).__init__(key[16:], FernetSigner(key[:16]))
+
+    def _encrypt_from_parts(self, data, iv):
+        payload = super(Fernet, self)._encrypt_from_parts(data, iv)
+        return base64.urlsafe_b64encode(payload)
+
+    def decrypt(self, token, ttl=None):
+        try:
+            data = base64.urlsafe_b64decode(token)
+        except TypeError:
+            raise InvalidToken
+        return super(Fernet, self).decrypt(data, ttl)

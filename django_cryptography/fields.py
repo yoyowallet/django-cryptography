@@ -2,7 +2,7 @@ from django.core import checks
 from django.db import models
 
 from django_cryptography.core.signing import SignatureExpired
-from django_cryptography.utils.crypto import Fernet
+from django_cryptography.utils.crypto import FernetBytes
 
 try:
     from django.utils.six.moves import cPickle as pickle
@@ -21,7 +21,7 @@ class EncryptedField(models.Field):
         key = kwargs.pop('key', None)
         ttl = kwargs.pop('ttl', None)
 
-        self._fernet = Fernet(key)
+        self._fernet = FernetBytes(key)
         self._ttl = ttl
         self.base_field = base_field
         super(EncryptedField, self).__init__(**kwargs)
