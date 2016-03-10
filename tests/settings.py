@@ -15,7 +15,7 @@ INSTALLED_APPS = [
     'django.contrib.admin.apps.SimpleAdminConfig',
     'django.contrib.staticfiles',
     'django_cryptography',
-    'tests',
+    'tests.fields',
 ]
 
 SIGNING_BACKEND = 'django_cryptography.core.signing.TimestampSigner'
