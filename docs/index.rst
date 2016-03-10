@@ -1,12 +1,15 @@
-Welcome to Django Cryptography's documentation!
-===============================================
+Welcome to ``django-cryptography``
+==================================
 
-Contents:
+A Django wrapper for the Python Cryptography_ library. Providing a
+drop in replacement for Django's own cryptographic primitives.
 
 .. toctree::
    :maxdepth: 2
 
+   installation
    settings
+   fields
 
 
 Indices and tables
@@ -16,3 +19,4 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
+.. _Cryptography: https://cryptography.io/
