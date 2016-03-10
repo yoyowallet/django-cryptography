@@ -27,6 +27,7 @@
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
 ]
 
@@ -103,6 +104,17 @@ exclude_patterns = ['_build']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
+
+# Links to Python's docs should reference the most recent version of the 3.x
+# branch, which is located at this URL.
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3/', None),
+    'cryptography': ('https://cryptography.io/en/stable/', None),
+    'django': ('https://django.readthedocs.org/en/stable/', None),
+}
+
+# Python's docs don't change every week.
+intersphinx_cache_limit = 90  # days
 
 # A list of ignored prefixes for module index sorting.
 # modindex_common_prefix = []
