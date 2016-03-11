@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import binascii
 import datetime
 import re
 import struct
@@ -166,7 +167,8 @@ class BytesSigner(Signer):
                       signed_value[-self._digest_size:])
         if constant_time_compare(sig, self.signature(value)):
             return value
-        raise BadSignature('Signature "%s" does not match' % sig)
+        raise BadSignature('Signature "%s" does not match' %
+                           binascii.b2a_base64(sig))
 
 
 class FernetSigner(Signer):
@@ -225,5 +227,6 @@ class FernetSigner(Signer):
         try:
             self.signature(signed_value[:-d_size]).verify(sig)
         except InvalidSignature:
-            raise BadSignature('Signature "%s" does not match' % sig)
+            raise BadSignature('Signature "%s" does not match' %
+                               binascii.b2a_base64(sig))
         return value
