@@ -5,6 +5,9 @@ cache: pip
 matrix:
   allow_failures:
     - python: nightly
+  exclude:
+    - python: "3.3"
+      env: DJANGO="Django>=1.9.0,<1.10.0"
 python:
   - "2.7"
   - "3.3"
