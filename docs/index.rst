@@ -1,5 +1,5 @@
-Welcome to ``django-cryptography``
-==================================
+Welcome to django-cryptography
+==============================
 
 A Django wrapper for the Python Cryptography_ library. Providing a
 drop in replacement for Django's own cryptographic primitives.
@@ -10,6 +10,7 @@ drop in replacement for Django's own cryptographic primitives.
    installation
    settings
    fields
+   releases
 
 
 Indices and tables

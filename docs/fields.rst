@@ -1,8 +1,8 @@
 Fields
 ======
 
-``EncryptedField``
-------------------
+:class:`EncryptedField`
+-----------------------
 
 .. class:: EncryptedField(base_field, **options)
 
@@ -37,8 +37,8 @@ Fields
       This is an optional argument.
 
       The amount of time in seconds that a value can be stored for. If the
-      :attr:`~ttl` of the data has passed it will become unreadable.
-      Instead returning an :class:`~Expired` object.
+      :attr:`~ttl` of the data has passed, it will become unreadable.
+      The expired value will return an :class:`~Expired` object.
 
 
 Constants

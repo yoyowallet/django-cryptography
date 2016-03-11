@@ -9,9 +9,9 @@ More information available in the documentation_.
 Requirements
 ------------
 
-* Python_ (2.7, 3.2, 3.3, 3.4, or 3.5)
-* Cryptography_
-* Django_ (1.8, 1.9)
+* Python_ (2.7, 3.3, 3.4 or 3.5)
+* Cryptography_ (1.2)
+* Django_ (1.8 or 1.9)
 
 Installation
 ------------
