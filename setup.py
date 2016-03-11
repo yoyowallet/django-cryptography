@@ -172,9 +172,6 @@ setup(
         'cryptography',
     ],
     tests_require=['Django'],
-    extras_require={
-        ':python_version<"3.5"': ['typing'],
-    },
     cmdclass={
         'test': DjangoTest,
     },
