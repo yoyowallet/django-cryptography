@@ -169,20 +169,21 @@ class TestUtilsCryptoPBKDF2(unittest.TestCase):
 
 class TestUtilsCryptoFernet(unittest.TestCase):
     def test_cryptography_key(self):
-        self.assertEqual(settings.CRYPTOGRAPHY_KEY,
-                         b'\xdf\xff\x9f\xac\xf7\x9a\x90\xda\x92\xc06\xc9r-\x16'
-                         b'0b~\xde\xf8\xb7\x95\xdd}\xf0}\xb0\x07\xc3l\xb1]')
+        self.assertEqual(
+            binascii.hexlify(settings.CRYPTOGRAPHY_KEY).decode('ascii'),
+            '3af94f1c73e82b00d41d2db759b54af2e31c55dc97a51c3c3ae8b83eb46dd2b8')
 
     def test_encrypt_decrypt(self):
         value = b'hello'
         iv = b'0123456789abcdef'
-        data = (b'\x80\x00\x00\x00\x00\x07[\xcd\x150123456789abcdef\xcc\xe6&,'
-                b'\x16\x9daly6"eEO\x19\xc4\x1dg\xd4j\x17\xc7\xd8\xbeC\xd1\x87'
-                b'\x8c\xd7\xc6W\xbe\\\x95Z\xcf\xbf\xd8Tts\xf7\x18u\xfd\x06RT')
+        data = ('8000000000075bcd153031323334353637383961626364656629b930b1955'
+                'ddaec2d74fb4ff565280abdc39baf116e80f116496cde9515bd7d938e5c74'
+                'd60bc186286e701ba4fb4004')
         with freeze_time(123456789):
             fernet = FernetBytes()
-            self.assertEqual(fernet._encrypt_from_parts(value, iv), data)
-            self.assertEqual(fernet.decrypt(data), value)
+            self.assertEqual(fernet._encrypt_from_parts(value, iv),
+                             binascii.unhexlify(data))
+            self.assertEqual(fernet.decrypt(binascii.unhexlify(data)), value)
 
     def test_standard_fernet(self):
         key = 'cw_0x689RpI-jtRR7oE8h_eQsKImvJapLeSbXpwF4e4='
