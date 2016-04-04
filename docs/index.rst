@@ -1,8 +1,10 @@
 Welcome to django-cryptography
 ==============================
 
-A Django wrapper for the Python Cryptography_ library. Providing a
-drop in replacement for Django's own cryptographic primitives.
+A set of primitives for easily encrypting data in Django, wrapping
+the Python Cryptography_ library. Also provided is a drop in
+replacement for Django's own cryptographic primitives, using
+Cryptography_ as the backend provider.
 
 .. toctree::
    :maxdepth: 2
@@ -10,6 +12,7 @@ drop in replacement for Django's own cryptographic primitives.
    installation
    settings
    fields
+   examples
    releases
 
 
