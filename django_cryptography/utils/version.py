@@ -2,8 +2,6 @@ import datetime
 import os
 import subprocess
 
-from .lru_cache import lru_cache
-
 
 def get_version(version=None):
     """
@@ -63,7 +61,6 @@ def get_docs_version(version=None):
         return '%d.%d' % version[:2]
 
 
-@lru_cache()
 def get_git_changeset():
     """
     Returns a numeric identifier of the latest git changeset.
