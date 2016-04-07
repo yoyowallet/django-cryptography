@@ -1,5 +1,6 @@
 from django.core import checks
 from django.db import models
+from django.utils.translation import ugettext_lazy as _
 
 from django_cryptography.core.signing import SignatureExpired
 from django_cryptography.utils.crypto import FernetBytes
@@ -13,6 +14,10 @@ Expired = object()
 
 
 class EncryptedField(models.Field):
+    @property
+    def description(self):
+        return _('Encrypted %s') % self.base_field.description
+
     def __init__(self, base_field, **kwargs):
         """
         :type base_field: django.db.models.fields.Field
@@ -25,10 +30,6 @@ class EncryptedField(models.Field):
         self._ttl = ttl
         self.base_field = base_field
         super(EncryptedField, self).__init__(**kwargs)
-
-    # def __getattr__(self, item):
-    #     # Map back to base_field instance
-    #     return getattr(self.base_field, item)
 
     def check(self, **kwargs):
         errors = super(EncryptedField, self).check(**kwargs)
@@ -56,17 +57,6 @@ class EncryptedField(models.Field):
                 )
         return errors
 
-    def set_attributes_from_name(self, name):
-        super(EncryptedField, self).set_attributes_from_name(name)
-        self.base_field.set_attributes_from_name(name)
-
-    @property
-    def description(self):
-        return 'Encrypted %s' % self.base_field.description
-
-    def get_internal_type(self):
-        return "BinaryField"
-
     def deconstruct(self):
         name, path, args, kwargs = super(EncryptedField, self).deconstruct()
         kwargs.update({
@@ -74,9 +64,30 @@ class EncryptedField(models.Field):
         })
         return name, path, args, kwargs
 
+    def run_validators(self, value):
+        super(EncryptedField, self).run_validators(value)
+        self.base_field.run_validators(value)
+
+    def validate(self, value, model_instance):
+        super(EncryptedField, self).validate(value, model_instance)
+        self.base_field.validate(value, model_instance)
+
+    def set_attributes_from_name(self, name):
+        super(EncryptedField, self).set_attributes_from_name(name)
+        self.base_field.set_attributes_from_name(name)
+
+    def get_internal_type(self):
+        return "BinaryField"
+
     def pre_save(self, model_instance, add):
         return self._fernet.encrypt(
             pickle.dumps(self.base_field.pre_save(model_instance, add)))
+
+    def get_db_prep_value(self, value, connection, prepared=False):
+        value = super(EncryptedField, self).get_db_prep_value(value, connection, prepared)
+        if value is not None:
+            return connection.Database.Binary(value)
+        return value
 
     def from_db_value(self, value, expression, connection, context):
         if value:
@@ -85,11 +96,3 @@ class EncryptedField(models.Field):
             except SignatureExpired:
                 return Expired
         return value
-
-    def validate(self, value, model_instance):
-        super(EncryptedField, self).validate(value, model_instance)
-        self.base_field.validate(value, model_instance)
-
-    def run_validators(self, value):
-        super(EncryptedField, self).run_validators(value)
-        self.base_field.run_validators(value)
