@@ -3,8 +3,10 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
+from django.db import models
 from django.test import TestCase
 from django.utils.six import binary_type
+from django_cryptography.fields import EncryptedField
 
 from .models import Test
 
@@ -44,3 +46,24 @@ class TestEncryptedField(TestCase):
         self.assertEqual(obj.ip_addres, obj.encrypted_ip_addres)
         self.assertEqual(obj.text, obj.encrypted_text)
         self.assertEqual(obj.uuid, obj.encrypted_uuid)
+
+    def test_field_checks(self):
+        class BadField(models.Model):
+            field = EncryptedField(models.CharField())
+
+        model = BadField()
+        errors = model.check()
+        self.assertEqual(len(errors), 1)
+        # The inner CharField is missing a max_length.
+        self.assertEqual('encrypted.E001', errors[0].id)
+        self.assertIn('max_length', errors[0].msg)
+
+    def test_invalid_base_fields(self):
+        class Related(models.Model):
+            field = EncryptedField(models.ForeignKey('fields.Test'))
+
+        obj = Related()
+        errors = obj.check()
+
+        self.assertEqual(1, len(errors))
+        self.assertEqual('encrypted.E002', errors[0].id)
