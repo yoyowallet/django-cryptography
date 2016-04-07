@@ -31,9 +31,22 @@ class EncryptedField(models.Field):
         self.base_field = base_field
         super(EncryptedField, self).__init__(**kwargs)
 
+    @property
+    def model(self):
+        try:
+            return self.__dict__['model']
+        except KeyError:
+            raise AttributeError("'%s' object has no attribute 'model'" %
+                                 self.__class__.__name__)
+
+    @model.setter
+    def model(self, model):
+        self.__dict__['model'] = model
+        self.base_field.model = model
+
     def check(self, **kwargs):
         errors = super(EncryptedField, self).check(**kwargs)
-        if self.base_field.rel:
+        if getattr(self.base_field, 'remote_field', self.base_field.rel):
             errors.append(
                 checks.Error(
                     'Base field for encrypted cannot be a related field.',
