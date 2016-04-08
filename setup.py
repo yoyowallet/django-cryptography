@@ -148,7 +148,7 @@ setup(
     author_email='george@georgemarshall.name',
     license='BSD',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Alpha',
         'Environment :: Web Environment',
         'Framework :: Django',
         'Intended Audience :: Developers',
