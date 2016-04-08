@@ -142,7 +142,7 @@ class DjangoTest(TestCommand):
 setup(
     name='django-cryptography',
     version=version,
-    description='Django wrapper for Cryptography',
+    description='Easily encrypt data in Django',
     url='https://github.com/georgemarshall/django-cryptography',
     author='George Marshall',
     author_email='george@georgemarshall.name',
