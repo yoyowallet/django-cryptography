@@ -11,18 +11,45 @@ except ImportError:
     import pickle
 
 Expired = object()
+"""Represents an expired encryption value."""
 
 
 class EncryptedField(models.Field):
+    """
+    A field for storing encrypted data
+
+    :param base_field: This is a required argument.
+
+        Specifies the underlying data type to be encrypted. It should be an
+        instance of a subclass of
+        :class:`~django.db.models.Field`. For example, it could be an
+        :class:`~django.db.models.IntegerField` or a
+        :class:`~django.db.models.CharField`. Most field types are
+        permitted, with the exception of those handling relational data
+        (:class:`~django.db.models.ForeignKey`,
+        :class:`~django.db.models.OneToOneField` and
+        :class:`~django.db.models.ManyToManyField`).
+
+        Transformation of values between the database and the model,
+        validation of data and configuration, and serialization are all
+        delegated to the underlying base field.
+    :type base_field: ~django.db.models.fields.Field
+    :param bytes key: This is an optional argument.
+
+        Allows for specifying an instance specific encryption key.
+    :param int ttl: This is an optional argument.
+
+        The amount of time in seconds that a value can be stored for. If the
+        time to live of the data has passed, it will become unreadable.
+        The expired value will return an :class:`Expired` object.
+    """
+
     @property
     def description(self):
         return _('Encrypted %s') % self.base_field.description
 
     def __init__(self, base_field, **kwargs):
-        """
-        :type base_field: django.db.models.fields.Field
-        :rtype: None
-        """
+        # type: (models.Field, ...) -> None
         key = kwargs.pop('key', None)
         ttl = kwargs.pop('ttl', None)
 
