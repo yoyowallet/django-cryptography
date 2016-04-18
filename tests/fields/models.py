@@ -4,7 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 from django_cryptography.fields import EncryptedField
 
 
-class Test(models.Model):
+class TestModel(models.Model):
     boolean = models.BooleanField(_('boolean'))
     encrypted_boolean = EncryptedField(models.BooleanField())
     char = models.CharField(_('char'), max_length=50)
@@ -25,3 +25,8 @@ class Test(models.Model):
     encrypted_text = EncryptedField(models.TextField())
     uuid = models.UUIDField(_('uuid'))
     encrypted_uuid = EncryptedField(models.UUIDField())
+
+
+class EncryptedFieldSubclass(EncryptedField):
+    def __init__(self, *args, **kwargs):
+        super(EncryptedFieldSubclass, self).__init__(models.IntegerField())
