@@ -33,7 +33,6 @@ class TestEncryptedField(TestCase):
         obj.encrypted_text = obj.text
         obj.encrypted_uuid = obj.uuid
         obj.save()
-        del obj
 
         # Fetch the object
         obj = TestModel.objects.get()
@@ -47,6 +46,16 @@ class TestEncryptedField(TestCase):
         self.assertEqual(obj.ip_addres, obj.encrypted_ip_addres)
         self.assertEqual(obj.text, obj.encrypted_text)
         self.assertEqual(obj.uuid, obj.encrypted_uuid)
+
+        # Update object
+        obj.encrypted_boolean = not obj.boolean
+        obj.encrypted_char = 'Goodbye, world!'
+        obj.save()
+
+        # Fetch the object
+        obj = TestModel.objects.get()
+        self.assertNotEqual(obj.boolean, obj.encrypted_boolean)
+        self.assertNotEqual(obj.char, obj.encrypted_char)
 
     def test_field_checks(self):
         class BadField(models.Model):
