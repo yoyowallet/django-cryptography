@@ -136,3 +136,6 @@ class EncryptedField(models.Field):
             except SignatureExpired:
                 return Expired
         return value
+
+    def formfield(self, **kwargs):
+        return self.base_field.formfield(**kwargs)

@@ -2,6 +2,7 @@ import uuid
 from datetime import timedelta
 from decimal import Decimal
 
+from django import forms
 from django.conf import settings
 from django.core.management import call_command
 from django.db import connection, models
@@ -115,3 +116,12 @@ class TestMigrations(TestCase):
         call_command('migrate', 'fields', 'zero', verbosity=0)
         with connection.cursor() as cursor:
             self.assertNotIn(table_name, connection.introspection.table_names(cursor))
+
+
+class TestSimpleFormField(TestCase):
+
+    def test_model_field_formfield(self):
+        model_field = EncryptedField(models.CharField(max_length=27))
+        form_field = model_field.formfield()
+        self.assertIsInstance(form_field, forms.CharField)
+        self.assertEqual(form_field.max_length, 27)
