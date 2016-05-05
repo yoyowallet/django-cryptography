@@ -46,14 +46,6 @@ class TestSaveLoad(TestCase):
         self.assertEqual(instance.dates, loaded.dates)
         self.assertEqual(instance.times, loaded.times)
 
-    @unittest.skip
-    def test_integers_passed_as_strings(self):
-        # This checks that get_prep_value is deferred properly
-        instance = EncryptedIntegerModel(field='1')
-        instance.save()
-        loaded = EncryptedIntegerModel.objects.get()
-        self.assertEqual(loaded.field, 1)
-
     def test_default_null(self):
         instance = EncryptedNullableIntegerModel()
         instance.save()

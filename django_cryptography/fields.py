@@ -1,6 +1,6 @@
 from django.core import checks
 from django.db import models
-from django.utils import six
+from django.utils.encoding import force_bytes
 from django.utils.translation import ugettext_lazy as _
 
 from django_cryptography.core.signing import SignatureExpired
@@ -53,8 +53,8 @@ class PickledField(models.Field):
         return self.to_python(value)
 
     def to_python(self, value):
-        if isinstance(value, six.binary_type):
-            return pickle.loads(value)
+        if value is not None:
+            return pickle.loads(force_bytes(value))
         return value
 
 
@@ -179,9 +179,9 @@ class EncryptedField(PickledField):
         return value
 
     def to_python(self, value):
-        if isinstance(value, six.binary_type):
+        if value is not None:
             try:
-                value = self._fernet.decrypt(value, self._ttl)
+                value = self._fernet.decrypt(force_bytes(value), self._ttl)
             except SignatureExpired:
                 return Expired
             return pickle.loads(value)
