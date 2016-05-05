@@ -20,7 +20,7 @@ class PickledField(models.Field):
     empty_values = [None, b'']
 
     def __init__(self, *args, **kwargs):
-        kwargs['editable'] = False
+        kwargs.setdefault('editable', False)
         super(PickledField, self).__init__(*args, **kwargs)
 
     def deconstruct(self):
@@ -58,7 +58,7 @@ class PickledField(models.Field):
         return value
 
 
-class EncryptedField(models.Field):
+class EncryptedField(PickledField):
     """
     A field for storing encrypted data
 
@@ -160,16 +160,13 @@ class EncryptedField(models.Field):
         super(EncryptedField, self).set_attributes_from_name(name)
         self.base_field.set_attributes_from_name(name)
 
-    def get_internal_type(self):
-        return "BinaryField"
-
     def pre_save(self, model_instance, add):
-        return self._fernet.encrypt(
-            pickle.dumps(self.base_field.pre_save(model_instance, add)))
+        return self.base_field.pre_save(model_instance, add)
 
     def get_db_prep_value(self, value, connection, prepared=False):
-        value = super(EncryptedField, self).get_db_prep_value(value, connection, prepared)
+        value = super(PickledField, self).get_db_prep_value(value, connection, prepared)
         if value is not None:
+            value = self._fernet.encrypt(pickle.dumps(value))
             return connection.Database.Binary(value)
         return value
 
@@ -179,6 +176,15 @@ class EncryptedField(models.Field):
                 return pickle.loads(self._fernet.decrypt(value, self._ttl))
             except SignatureExpired:
                 return Expired
+        return value
+
+    def to_python(self, value):
+        if isinstance(value, six.binary_type):
+            try:
+                value = self._fernet.decrypt(value, self._ttl)
+            except SignatureExpired:
+                return Expired
+            return pickle.loads(value)
         return value
 
     def formfield(self, **kwargs):

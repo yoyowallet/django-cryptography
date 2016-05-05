@@ -1,3 +1,5 @@
+import decimal
+import unittest
 import uuid
 from datetime import timedelta
 from decimal import Decimal
@@ -5,12 +7,81 @@ from decimal import Decimal
 from django import forms
 from django.conf import settings
 from django.core.management import call_command
-from django.db import connection, models
+from django.db import IntegrityError, connection, models
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from django.utils.six import binary_type
 
 from django_cryptography.fields import EncryptedField
-from .models import EncryptedFieldSubclass, TestModel
+from .models import (
+    EncryptedFieldSubclass,  EncryptedIntegerModel,
+    EncryptedNullableIntegerModel, EncryptedCharModel, EncryptedDateTimeModel,
+    OtherEncryptedTypesModel, TestModel,
+)
+
+
+class TestSaveLoad(TestCase):
+
+    def test_integer(self):
+        instance = EncryptedIntegerModel(field=42)
+        instance.save()
+        loaded = EncryptedIntegerModel.objects.get()
+        self.assertEqual(instance.field, loaded.field)
+
+    def test_char(self):
+        instance = EncryptedCharModel(field='Hello, world!')
+        instance.save()
+        loaded = EncryptedCharModel.objects.get()
+        self.assertEqual(instance.field, loaded.field)
+
+    def test_dates(self):
+        instance = EncryptedDateTimeModel(
+            datetimes=timezone.now(),
+            dates=timezone.now().date(),
+            times=timezone.now().time(),
+        )
+        instance.save()
+        loaded = EncryptedDateTimeModel.objects.get()
+        self.assertEqual(instance.datetimes, loaded.datetimes)
+        self.assertEqual(instance.dates, loaded.dates)
+        self.assertEqual(instance.times, loaded.times)
+
+    @unittest.skip
+    def test_integers_passed_as_strings(self):
+        # This checks that get_prep_value is deferred properly
+        instance = EncryptedIntegerModel(field='1')
+        instance.save()
+        loaded = EncryptedIntegerModel.objects.get()
+        self.assertEqual(loaded.field, 1)
+
+    def test_default_null(self):
+        instance = EncryptedNullableIntegerModel()
+        instance.save()
+        loaded = EncryptedNullableIntegerModel.objects.get(pk=instance.pk)
+        self.assertEqual(loaded.field, None)
+        self.assertEqual(instance.field, loaded.field)
+
+    def test_null_handling(self):
+        instance = EncryptedNullableIntegerModel(field=None)
+        instance.save()
+        loaded = EncryptedNullableIntegerModel.objects.get()
+        self.assertEqual(instance.field, loaded.field)
+
+        instance = EncryptedIntegerModel(field=None)
+        with self.assertRaises(IntegrityError):
+            instance.save()
+
+    def test_other_array_types(self):
+        instance = OtherEncryptedTypesModel(
+            ips='192.168.0.1',
+            uuids=uuid.uuid4(),
+            decimals=decimal.Decimal(1.25),
+        )
+        instance.save()
+        loaded = OtherEncryptedTypesModel.objects.get()
+        self.assertEqual(instance.ips, loaded.ips)
+        self.assertEqual(instance.uuids, loaded.uuids)
+        self.assertEqual(instance.decimals, loaded.decimals)
 
 
 class TestEncryptedField(TestCase):
