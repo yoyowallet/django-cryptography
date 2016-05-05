@@ -2,6 +2,8 @@ from django.db import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
 
+from django_cryptography.fields import PickledField
+
 from .models import PickledModel, NullablePickledModel
 
 
@@ -41,3 +43,10 @@ class TestSaveLoad(TestCase):
         instance = PickledModel(field=None)
         with self.assertRaises(IntegrityError):
             instance.save()
+
+
+class TestValidation(TestCase):
+
+    def test_validate(self):
+        field = PickledField()
+        field.clean(None, None)

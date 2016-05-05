@@ -20,7 +20,7 @@ class PickledField(models.Field):
     empty_values = [None, b'']
 
     def __init__(self, *args, **kwargs):
-        kwargs.setdefault('editable', False)
+        kwargs['editable'] = False
         super(PickledField, self).__init__(*args, **kwargs)
 
     def deconstruct(self):
@@ -100,7 +100,7 @@ class EncryptedField(PickledField):
         self._fernet = FernetBytes(key)
         self._ttl = ttl
         self.base_field = base_field
-        super(EncryptedField, self).__init__(**kwargs)
+        super(PickledField, self).__init__(**kwargs)
 
     @property
     def model(self):
@@ -142,7 +142,7 @@ class EncryptedField(PickledField):
         return errors
 
     def deconstruct(self):
-        name, path, args, kwargs = super(EncryptedField, self).deconstruct()
+        name, path, args, kwargs = super(PickledField, self).deconstruct()
         kwargs.update({
             'base_field': self.base_field,
         })
@@ -153,7 +153,6 @@ class EncryptedField(PickledField):
         self.base_field.run_validators(value)
 
     def validate(self, value, model_instance):
-        super(EncryptedField, self).validate(value, model_instance)
         self.base_field.validate(value, model_instance)
 
     def set_attributes_from_name(self, name):
