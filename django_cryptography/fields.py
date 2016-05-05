@@ -50,9 +50,6 @@ class PickledField(models.Field):
         return value
 
     def from_db_value(self, value, expression, connection, context):
-        return self.to_python(value)
-
-    def to_python(self, value):
         if value is not None:
             return pickle.loads(force_bytes(value))
         return value
@@ -170,14 +167,6 @@ class EncryptedField(PickledField):
         return value
 
     def from_db_value(self, value, expression, connection, context):
-        if value:
-            try:
-                return pickle.loads(self._fernet.decrypt(value, self._ttl))
-            except SignatureExpired:
-                return Expired
-        return value
-
-    def to_python(self, value):
         if value is not None:
             try:
                 value = self._fernet.decrypt(force_bytes(value), self._ttl)
