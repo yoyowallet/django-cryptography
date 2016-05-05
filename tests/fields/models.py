@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-from django_cryptography.fields import EncryptedField
+from django_cryptography.fields import EncryptedField, PickledField
 
 
 class TestModel(models.Model):
@@ -25,6 +25,14 @@ class TestModel(models.Model):
     encrypted_text = EncryptedField(models.TextField())
     uuid = models.UUIDField(_('uuid'))
     encrypted_uuid = EncryptedField(models.UUIDField())
+
+
+class PickledModel(models.Model):
+    field = PickledField()
+
+
+class NullablePickledModel(models.Model):
+    field = PickledField(blank=True, null=True)
 
 
 class EncryptedFieldSubclass(EncryptedField):

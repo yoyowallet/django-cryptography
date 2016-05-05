@@ -1,5 +1,6 @@
 from django.core import checks
 from django.db import models
+from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 
 from django_cryptography.core.signing import SignatureExpired
@@ -12,6 +13,49 @@ except ImportError:
 
 Expired = object()
 """Represents an expired encryption value."""
+
+
+class PickledField(models.Field):
+    description = _("Pickled data")
+    empty_values = [None, b'']
+
+    def __init__(self, *args, **kwargs):
+        kwargs['editable'] = False
+        super(PickledField, self).__init__(*args, **kwargs)
+
+    def deconstruct(self):
+        name, path, args, kwargs = super(PickledField, self).deconstruct()
+        del kwargs['editable']
+        return name, path, args, kwargs
+
+    def get_internal_type(self):
+        return "BinaryField"
+
+    def get_default(self):
+        if self.has_default() and not callable(self.default):
+            return self.default
+        default = super(PickledField, self).get_default()
+        if default == '':
+            return b''
+        return default
+
+    def validate(self, value, model_instance):
+        pass
+
+    def get_db_prep_value(self, value, connection, prepared=False):
+        value = super(PickledField, self).get_db_prep_value(value, connection, prepared)
+        if value is not None:
+            value = pickle.dumps(value)
+            return connection.Database.Binary(value)
+        return value
+
+    def from_db_value(self, value, expression, connection, context):
+        return self.to_python(value)
+
+    def to_python(self, value):
+        if isinstance(value, six.binary_type):
+            return pickle.loads(value)
+        return value
 
 
 class EncryptedField(models.Field):
