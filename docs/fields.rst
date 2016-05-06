@@ -6,6 +6,9 @@ Fields
 .. autoclass:: EncryptedField
    :members:
 
+.. autoclass:: PickledField
+   :members:
+
 Constants
 ---------
 

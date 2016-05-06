@@ -16,6 +16,9 @@ Expired = object()
 
 
 class PickledField(models.Field):
+    """
+    A field for storing pickled objects
+    """
     description = _("Pickled data")
     empty_values = [None, b'']
 
