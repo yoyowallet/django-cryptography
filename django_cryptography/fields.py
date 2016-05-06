@@ -42,6 +42,12 @@ class PickledField(models.Field):
     def validate(self, value, model_instance):
         pass
 
+    def get_db_prep_lookup(self, lookup_type, *args, **kwargs):
+        print('===', lookup_type)
+        if lookup_type not in ('exact', 'in', 'isnull'):
+            raise TypeError('Lookup type %s is not supported.' % lookup_type)
+        return super(PickledField, self).get_db_prep_lookup(lookup_type, *args, **kwargs)
+
     def get_db_prep_value(self, value, connection, prepared=False):
         value = super(PickledField, self).get_db_prep_value(value, connection, prepared)
         if value is not None:

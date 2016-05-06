@@ -1,3 +1,5 @@
+import unittest
+
 from django.db import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
@@ -43,6 +45,40 @@ class TestSaveLoad(TestCase):
         instance = PickledModel(field=None)
         with self.assertRaises(IntegrityError):
             instance.save()
+
+
+class TestQuerying(TestCase):
+
+    def setUp(self):
+        self.objs = [
+            NullablePickledModel.objects.create(field=[1]),
+            NullablePickledModel.objects.create(field=[2]),
+            NullablePickledModel.objects.create(field=[2, 3]),
+            NullablePickledModel.objects.create(field=[20, 30, 40]),
+            NullablePickledModel.objects.create(field=None),
+        ]
+
+    def test_exact(self):
+        self.assertSequenceEqual(
+            NullablePickledModel.objects.filter(field__exact=[1]),
+            self.objs[:1]
+        )
+
+    def test_isnull(self):
+        self.assertSequenceEqual(
+            NullablePickledModel.objects.filter(field__isnull=True),
+            self.objs[-1:]
+        )
+
+    def test_in(self):
+        self.assertSequenceEqual(
+            NullablePickledModel.objects.filter(field__in=[[1], [2]]),
+            self.objs[:2]
+        )
+
+    def test_unsupported(self):
+        with self.assertRaises(TypeError):
+            NullablePickledModel.objects.filter(field__contains=[2]).count()
 
 
 class TestValidation(TestCase):
