@@ -12,7 +12,8 @@ from django.utils.crypto import (
 
 from django_cryptography.core import signing
 from django_cryptography.utils.crypto import (
-    Fernet, FernetBytes, constant_time_compare, pbkdf2, salted_hmac,
+    Fernet, FernetBytes, InvalidToken,
+    constant_time_compare, pbkdf2, salted_hmac,
 )
 
 
@@ -162,6 +163,12 @@ class TestUtilsCryptoPBKDF2(unittest.TestCase):
         kwargs["digest"] = self.digest_map[kwargs["digest"].__class__]
         return kwargs
 
+    @override_settings(CRYPTOGRAPHY_DIGEST=hashes.SHA1())
+    def test_defaults(self):
+        result = pbkdf2('password', 'salt', 1)
+        self.assertEqual('0c60c80f961f0e71f3a9b524af6012062fe037a6',
+                         binascii.hexlify(result).decode('ascii'))
+
     def test_public_vectors(self):
         for vector in self.rfc_vectors:
             result = pbkdf2(**vector['args'])
@@ -180,7 +187,7 @@ class TestUtilsCryptoPBKDF2(unittest.TestCase):
                              django_pbkdf2(**self.django_args(vector['args'])))
 
 
-class TestUtilsCryptoFernet(unittest.TestCase):
+class FernetBytesTestCase(unittest.TestCase):
     def test_cryptography_key(self):
         self.assertEqual(
             binascii.hexlify(settings.CRYPTOGRAPHY_KEY).decode('ascii'),
@@ -198,15 +205,48 @@ class TestUtilsCryptoFernet(unittest.TestCase):
                              binascii.unhexlify(data))
             self.assertEqual(fernet.decrypt(binascii.unhexlify(data)), value)
 
-    def test_standard_fernet(self):
+    def test_decryptor_invalid_token(self):
+        data = ('8000000000075bcd153031323334353637383961626364656629b930b1955'
+                'ddaec2d74fb4ff565d549d94cc75de940d1d25507f30763f05c412390d15d'
+                'a26bccee69f1b4543e75')
+        with freeze_time(123456789):
+            fernet = FernetBytes()
+            with self.assertRaises(InvalidToken):
+                fernet.decrypt(binascii.unhexlify(data))
+
+    def test_unpadder_invalid_token(self):
+        data = ('8000000000075bcd15303132333435363738396162636465660ecd40b0f64'
+                '8f001b78b5a77b334b40fbbff559444b3325233e71c24e53f6028116b0377'
+                'b910ebe5498396de36dee59b')
+        with freeze_time(123456789):
+            fernet = FernetBytes()
+            with self.assertRaises(InvalidToken):
+                fernet.decrypt(binascii.unhexlify(data))
+
+
+class StandardFernetTestCase(unittest.TestCase):
+    def test_encrypt_decrypt(self):
         key = 'cw_0x689RpI-jtRR7oE8h_eQsKImvJapLeSbXpwF4e4='
-        data = ('gAAAAAAdwJ6wAAECAwQFBgcICQoLDA0ODy021cpGVWKZ_eEwCG'
-                'M4BLLF_5CV9dOPmrhuVUPgJobwOz7JcbmrR64jVmpU4IwqDA==')
+        value = b'hello'
+        iv = b'0123456789abcdef'
+        data = (b'gAAAAAAdwJ6wMDEyMzQ1Njc4OWFiY2RlZjYYKxzJY4VTm9YIi4'
+                b'Pp6o_RvhRbEt-VW6a0zE-ys6tS1_2Xd2011mjXrVrMV0QfRA==')
         with freeze_time(499162800):
             fernet = Fernet(key)
-            self.assertEqual(fernet.decrypt(data, 60), b'hello')
+            self.assertEqual(data, fernet._encrypt_from_parts(value, iv))
+            self.assertEqual(value, fernet.decrypt(data, 60))
 
         with freeze_time(123456789):
             fernet = Fernet(key)
             with self.assertRaises(signing.SignatureExpired):
-                self.assertEqual(fernet.decrypt(data, 60), b'hello')
+                fernet.decrypt(data, 60)
+
+    def test_bad_key(self):
+        with self.assertRaises(ValueError):
+            Fernet('')
+
+    def test_invalid_type(self):
+        key = 'cw_0x689RpI-jtRR7oE8h_eQsKImvJapLeSbXpwF4e4='
+        fernet = Fernet(key)
+        with self.assertRaises(InvalidToken):
+            fernet.decrypt(42)
