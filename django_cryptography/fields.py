@@ -77,9 +77,6 @@ class PickledField(models.Field):
             return pickle.loads(b64decode(force_bytes(value)))
         return value
 
-    def validate(self, value, model_instance):
-        pass
-
 
 class EncryptedField(PickledField):
     """
@@ -110,10 +107,7 @@ class EncryptedField(PickledField):
         time to live of the data has passed, it will become unreadable.
         The expired value will return an :class:`Expired` object.
     """
-
-    @property
-    def description(self):
-        return _('Encrypted %s') % self.base_field.description
+    supported_lookups = ('isnull',)
 
     def __init__(self, base_field, **kwargs):
         # type: (models.Field, ...) -> None
@@ -124,6 +118,10 @@ class EncryptedField(PickledField):
         self._ttl = ttl
         self.base_field = base_field
         super(PickledField, self).__init__(**kwargs)
+
+    @property
+    def description(self):
+        return _('Encrypted %s') % self.base_field.description
 
     @property
     def model(self):

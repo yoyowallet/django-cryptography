@@ -1,4 +1,5 @@
 import binascii
+import hashlib
 import unittest
 
 from cryptography.hazmat.primitives import hashes
@@ -35,6 +36,14 @@ class TestUtilsCryptoMisc(unittest.TestCase):
 
 
 class TestUtilsCryptoPBKDF2(unittest.TestCase):
+    digest_map = {
+        hashes.MD5: hashlib.md5,
+        hashes.SHA1: hashlib.sha1,
+        hashes.SHA224: hashlib.sha224,
+        hashes.SHA256: hashlib.sha256,
+        hashes.SHA384: hashlib.sha384,
+        hashes.SHA512: hashlib.sha512,
+    }
 
     # http://tools.ietf.org/html/draft-josefsson-pbkdf2-test-vectors-06
     rfc_vectors = [
@@ -148,6 +157,11 @@ class TestUtilsCryptoPBKDF2(unittest.TestCase):
         },
     ]
 
+    def django_args(self, kwargs):
+        kwargs = kwargs.copy()
+        kwargs["digest"] = self.digest_map[kwargs["digest"].__class__]
+        return kwargs
+
     def test_public_vectors(self):
         for vector in self.rfc_vectors:
             result = pbkdf2(**vector['args'])
@@ -160,11 +174,10 @@ class TestUtilsCryptoPBKDF2(unittest.TestCase):
             self.assertEqual(binascii.hexlify(result).decode('ascii'),
                              vector['result'])
 
-    @unittest.skip("Cryptography hashers don't mix with hashlib")
     def test_django_parity(self):
         for vector in self.rfc_vectors:
             self.assertEqual(pbkdf2(**vector['args']),
-                             django_pbkdf2(**vector['args']))
+                             django_pbkdf2(**self.django_args(vector['args'])))
 
 
 class TestUtilsCryptoFernet(unittest.TestCase):
