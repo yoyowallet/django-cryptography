@@ -11,27 +11,27 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.hmac import HMAC
 from django.conf import settings
-from django.core import signing
+from django.core.signing import (
+    BadSignature, SignatureExpired, b64_encode, b64_decode,
+    get_cookie_signer, JSONSerializer
+)
 from django.utils import baseconv, six
 from django.utils.encoding import force_bytes, force_str, force_text
 
 from ..utils.crypto import constant_time_compare, salted_hmac
 
+__all__ = [
+    'BadSignature', 'SignatureExpired', 'b64_encode', 'b64_decode',
+    'base64_hmac', 'get_cookie_signer', 'JSONSerializer', 'dumps', 'loads',
+    'Signer', 'TimestampSigner', 'BytesSigner', 'FernetSigner'
+]
+
 _MAX_CLOCK_SKEW = 60
 _SEP_UNSAFE = re.compile(r'^[A-z0-9-_=]*$')
-
-BadSignature = signing.BadSignature
-SignatureExpired = signing.SignatureExpired
-b64_encode = signing.b64_encode
-b64_decode = signing.b64_decode
 
 
 def base64_hmac(salt, value, key):
     return b64_encode(salted_hmac(salt, value, key).finalize())
-
-
-get_cookie_signer = signing.get_cookie_signer
-JSONSerializer = signing.JSONSerializer
 
 
 def dumps(obj, key=None, salt='django.core.signing', serializer=JSONSerializer, compress=False):
@@ -152,8 +152,8 @@ class BytesSigner(Signer):
         digest = settings.CRYPTOGRAPHY_DIGEST
         self._digest_size = digest.digest_size
         self.key = key or settings.SECRET_KEY
-        self.salt = force_str(salt or
-            '%s.%s' % (self.__class__.__module__, self.__class__.__name__))
+        self.salt = force_str(salt or '%s.%s' % (
+            self.__class__.__module__, self.__class__.__name__))
 
     def signature(self, value):
         return salted_hmac(self.salt + 'signer', value, self.key).finalize()
