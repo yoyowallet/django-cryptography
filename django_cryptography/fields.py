@@ -30,6 +30,12 @@ class PickledField(models.Field):
         kwargs['editable'] = False
         super(PickledField, self).__init__(*args, **kwargs)
 
+    def _dump(self, value):
+        return pickle.dumps(value)
+
+    def _load(self, value):
+        return pickle.loads(value)
+
     def deconstruct(self):
         name, path, args, kwargs = super(PickledField, self).deconstruct()
         del kwargs['editable']
@@ -57,24 +63,23 @@ class PickledField(models.Field):
     def get_db_prep_value(self, value, connection, prepared=False):
         value = super(PickledField, self).get_db_prep_value(value, connection, prepared)
         if value is not None:
-            value = pickle.dumps(value)
-            return connection.Database.Binary(value)
+            return connection.Database.Binary(self._dump(value))
         return value
 
     def from_db_value(self, value, expression, connection, context):
         if value is not None:
-            return pickle.loads(force_bytes(value))
+            return self._load(force_bytes(value))
         return value
 
     def value_to_string(self, obj):
         """Pickled data is serialized as base64"""
         value = self.value_from_object(obj)
-        return b64encode(pickle.dumps(value)).decode('ascii')
+        return b64encode(self._dump(value)).decode('ascii')
 
     def to_python(self, value):
         # If it's a string, it should be base64-encoded data
         if isinstance(value, six.text_type):
-            return pickle.loads(b64decode(force_bytes(value)))
+            return self._load(b64decode(force_bytes(value)))
         return value
 
 
@@ -136,6 +141,19 @@ class EncryptedField(PickledField):
         self.__dict__['model'] = model
         self.base_field.model = model
 
+    def _dump(self, value):
+        return self._fernet.encrypt(
+            super(EncryptedField, self)._dump(value)
+        )
+
+    def _load(self, value):
+        try:
+            return super(EncryptedField, self)._load(
+                self._fernet.decrypt(value, self._ttl)
+            )
+        except SignatureExpired:
+            return Expired
+
     def check(self, **kwargs):
         errors = super(EncryptedField, self).check(**kwargs)
         if getattr(self.base_field, 'remote_field', self.base_field.rel):
@@ -182,22 +200,6 @@ class EncryptedField(PickledField):
 
     def pre_save(self, model_instance, add):
         return self.base_field.pre_save(model_instance, add)
-
-    def get_db_prep_value(self, value, connection, prepared=False):
-        value = super(PickledField, self).get_db_prep_value(value, connection, prepared)
-        if value is not None:
-            value = self._fernet.encrypt(pickle.dumps(value))
-            return connection.Database.Binary(value)
-        return value
-
-    def from_db_value(self, value, expression, connection, context):
-        if value is not None:
-            try:
-                value = self._fernet.decrypt(force_bytes(value), self._ttl)
-            except SignatureExpired:
-                return Expired
-            return pickle.loads(value)
-        return value
 
     def formfield(self, **kwargs):
         return self.base_field.formfield(**kwargs)
