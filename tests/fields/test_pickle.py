@@ -1,5 +1,7 @@
-import unittest
+import json
+import pickle
 
+from django.core import exceptions, serializers
 from django.db import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
@@ -10,7 +12,6 @@ from .models import PickledModel, NullablePickledModel
 
 
 class TestSaveLoad(TestCase):
-
     def test_integer(self):
         instance = PickledModel(field=42)
         instance.save()
@@ -48,7 +49,6 @@ class TestSaveLoad(TestCase):
 
 
 class TestQuerying(TestCase):
-
     def setUp(self):
         self.objs = [
             NullablePickledModel.objects.create(field=[1]),
@@ -77,12 +77,28 @@ class TestQuerying(TestCase):
         )
 
     def test_unsupported(self):
-        with self.assertRaises(TypeError):
-            NullablePickledModel.objects.filter(field__contains=[2]).count()
+        with self.assertRaises(exceptions.FieldError):
+            NullablePickledModel.objects.filter(field__contains=[2])
+
+
+class TestSerialization(TestCase):
+    test_data = (
+        '[{"fields": {"field": "KGxwMQpJMQphSTIKYU5hLg=="}, "model": "fields.pickledmodel", "pk": null}]'
+    ) if pickle.HIGHEST_PROTOCOL < 3 else (
+        '[{"fields": {"field": "gANdcQAoSwFLAk5lLg=="}, "model": "fields.pickledmodel", "pk": null}]'
+    )
+
+    def test_dumping(self):
+        instance = PickledModel(field=[1, 2, None])
+        data = serializers.serialize('json', [instance])
+        self.assertEqual(json.loads(self.test_data), json.loads(data))
+
+    def test_loading(self):
+        instance = list(serializers.deserialize('json', self.test_data))[0].object
+        self.assertEqual([1, 2, None], instance.field)
 
 
 class TestValidation(TestCase):
-
     def test_validate(self):
         field = PickledField()
         field.clean(None, None)

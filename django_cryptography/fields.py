@@ -1,5 +1,8 @@
+from base64 import b64decode, b64encode
+
 from django.core import checks
 from django.db import models
+from django.utils import six
 from django.utils.encoding import force_bytes
 from django.utils.translation import ugettext_lazy as _
 
@@ -21,6 +24,7 @@ class PickledField(models.Field):
     """
     description = _("Pickled data")
     empty_values = [None, b'']
+    supported_lookups = ('exact', 'in', 'isnull')
 
     def __init__(self, *args, **kwargs):
         kwargs['editable'] = False
@@ -42,13 +46,15 @@ class PickledField(models.Field):
             return b''
         return default
 
-    def validate(self, value, model_instance):
-        pass
+    def get_lookup(self, lookup_name):
+        if lookup_name not in self.supported_lookups:
+            return
+        return super(PickledField, self).get_lookup(lookup_name)
 
-    def get_db_prep_lookup(self, lookup_type, *args, **kwargs):
-        if lookup_type not in ('exact', 'in', 'isnull'):
-            raise TypeError('Lookup type %s is not supported.' % lookup_type)
-        return super(PickledField, self).get_db_prep_lookup(lookup_type, *args, **kwargs)
+    def get_transform(self, lookup_name):
+        if lookup_name not in self.supported_lookups:
+            return
+        return super(PickledField, self).get_transform(lookup_name)
 
     def get_db_prep_value(self, value, connection, prepared=False):
         value = super(PickledField, self).get_db_prep_value(value, connection, prepared)
@@ -61,6 +67,20 @@ class PickledField(models.Field):
         if value is not None:
             return pickle.loads(force_bytes(value))
         return value
+
+    def value_to_string(self, obj):
+        """Pickled data is serialized as base64"""
+        value = self.value_from_object(obj)
+        return b64encode(pickle.dumps(value)).decode('ascii')
+
+    def to_python(self, value):
+        # If it's a string, it should be base64-encoded data
+        if isinstance(value, six.text_type):
+            return pickle.loads(b64decode(force_bytes(value)))
+        return value
+
+    def validate(self, value, model_instance):
+        pass
 
 
 class EncryptedField(PickledField):
