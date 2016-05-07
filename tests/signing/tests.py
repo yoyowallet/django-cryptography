@@ -13,7 +13,7 @@ from django_cryptography.core import signing
 class TestSigner(SimpleTestCase):
 
     def test_signature(self):
-        "signature() method should generate a signature"
+        """signature() method should generate a signature"""
         signer = signing.Signer('predictable-secret')
         signer2 = signing.Signer('predictable-secret2')
         for s in (
@@ -23,13 +23,13 @@ class TestSigner(SimpleTestCase):
         ):
             self.assertEqual(
                 signer.signature(s),
-                signing.base64_hmac(signer.salt + 'signer', s,
-                    'predictable-secret').decode()
+                signing.base64_hmac(
+                    signer.salt + 'signer', s, 'predictable-secret').decode()
             )
             self.assertNotEqual(signer.signature(s), signer2.signature(s))
 
     def test_signature_with_salt(self):
-        "signature(value, salt=...) should work"
+        """signature(value, salt=...) should work"""
         signer = signing.Signer('predictable-secret', salt='extra-salt')
         self.assertEqual(
             signer.signature('hello'),
@@ -41,7 +41,7 @@ class TestSigner(SimpleTestCase):
             signing.Signer('predictable-secret', salt='two').signature('hello'))
 
     def test_sign_unsign(self):
-        "sign/unsign should be reversible"
+        """sign/unsign should be reversible"""
         signer = signing.Signer('predictable-secret')
         examples = [
             'q;wjmbk;wkmb',
@@ -59,7 +59,7 @@ class TestSigner(SimpleTestCase):
             self.assertEqual(example, signer.unsign(signed))
 
     def test_unsign_detects_tampering(self):
-        "unsign should raise an exception if the value has been tampered with"
+        """unsign should raise an exception if the value has been tampered with"""
         signer = signing.Signer('predictable-secret')
         value = 'Another string'
         signed_value = signer.sign(value)
@@ -75,11 +75,12 @@ class TestSigner(SimpleTestCase):
                 signer.unsign(transform(signed_value))
 
     def test_dumps_loads(self):
-        "dumps and loads be reversible for any JSON serializable object"
+        """dumps and loads be reversible for any JSON serializable object"""
         objects = [
             ['a', 'list'],
             'a unicode string \u2019',
             {'a': 'dictionary'},
+            'a compressible string' * 100,
         ]
         if six.PY2:
             objects.append(b'a byte string')
@@ -90,7 +91,7 @@ class TestSigner(SimpleTestCase):
             self.assertEqual(o, signing.loads(signing.dumps(o, compress=True)))
 
     def test_decode_detects_tampering(self):
-        "loads should raise exception for tampered objects"
+        """loads should raise exception for tampered objects"""
         transforms = (
             lambda s: s.upper(),
             lambda s: s + 'a',
@@ -150,7 +151,7 @@ class TestTimestampSigner(SimpleTestCase):
 class TestBytesSigner(SimpleTestCase):
 
     def test_signature(self):
-        "signature() method should generate a signature"
+        """signature() method should generate a signature"""
         signer = signing.BytesSigner('predictable-secret')
         signer2 = signing.BytesSigner('predictable-secret2')
         for s in (
@@ -166,7 +167,7 @@ class TestBytesSigner(SimpleTestCase):
             self.assertNotEqual(signer.signature(s), signer2.signature(s))
 
     def test_signature_with_salt(self):
-        "signature(value, salt=...) should work"
+        """signature(value, salt=...) should work"""
         signer = signing.BytesSigner('predictable-secret', salt='extra-salt')
         self.assertEqual(
             signer.signature('hello'),
@@ -178,7 +179,7 @@ class TestBytesSigner(SimpleTestCase):
             signing.BytesSigner('predictable-secret', salt='two').signature('hello'))
 
     def test_sign_unsign(self):
-        "sign/unsign should be reversible"
+        """sign/unsign should be reversible"""
         signer = signing.BytesSigner('predictable-secret')
         examples = [
             b'q;wjmbk;wkmb',
@@ -196,7 +197,7 @@ class TestBytesSigner(SimpleTestCase):
             self.assertEqual(example, signer.unsign(signed))
 
     def test_unsign_detects_tampering(self):
-        "unsign should raise an exception if the value has been tampered with"
+        """unsign should raise an exception if the value has been tampered with"""
         signer = signing.BytesSigner('predictable-secret')
         value = b'Another string'
         signed_value = signer.sign(value)
@@ -211,7 +212,7 @@ class TestBytesSigner(SimpleTestCase):
                 signer.unsign(transform(signed_value))
 
     def test_dumps_loads(self):
-        "dumps and loads be reversible for any JSON serializable object"
+        """dumps and loads be reversible for any JSON serializable object"""
         objects = [
             ['a', 'list'],
             'a unicode string \u2019',
@@ -226,7 +227,7 @@ class TestBytesSigner(SimpleTestCase):
             self.assertEqual(o, signing.loads(signing.dumps(o, compress=True)))
 
     def test_decode_detects_tampering(self):
-        "loads should raise exception for tampered objects"
+        """loads should raise exception for tampered objects"""
         transforms = (
             lambda s: s.upper(),
             lambda s: s + 'a',
