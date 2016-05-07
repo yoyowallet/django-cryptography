@@ -81,6 +81,15 @@ class TestQuerying(TestCase):
             NullablePickledModel.objects.filter(field__contains=[2])
 
 
+class TestMigrations(TestCase):
+    def test_deconstruct(self):
+        field = PickledField()
+        name, path, args, kwargs = field.deconstruct()
+        self.assertEqual("django_cryptography.fields.PickledField", path)
+        self.assertEqual(args, [])
+        self.assertEqual(kwargs, {})
+
+
 class TestSerialization(TestCase):
     test_data = (
         '[{"fields": {"field": "KGxwMQpJMQphSTIKYU5hLg=="}, "model": "fields.pickledmodel", "pk": null}]'

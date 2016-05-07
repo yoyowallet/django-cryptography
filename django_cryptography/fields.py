@@ -39,8 +39,6 @@ class PickledField(models.Field):
         return "BinaryField"
 
     def get_default(self):
-        if self.has_default() and not callable(self.default):
-            return self.default
         default = super(PickledField, self).get_default()
         if default == '':
             return b''
