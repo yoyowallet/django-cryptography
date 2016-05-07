@@ -249,4 +249,4 @@ class StandardFernetTestCase(unittest.TestCase):
         key = 'cw_0x689RpI-jtRR7oE8h_eQsKImvJapLeSbXpwF4e4='
         fernet = Fernet(key)
         with self.assertRaises(InvalidToken):
-            fernet.decrypt(42)
+            fernet.decrypt('Hi')

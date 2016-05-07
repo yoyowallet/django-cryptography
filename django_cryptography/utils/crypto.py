@@ -1,5 +1,6 @@
 import base64
 import os
+from binascii import Error
 
 from cryptography.hazmat.primitives import constant_time, hashes, padding
 from cryptography.hazmat.primitives.ciphers import algorithms, Cipher, modes
@@ -172,6 +173,6 @@ class Fernet(FernetBytes):
     def decrypt(self, token, ttl=None):
         try:
             data = base64.urlsafe_b64decode(token)
-        except TypeError:
+        except (TypeError, Error):
             raise InvalidToken
         return super(Fernet, self).decrypt(data, ttl)
