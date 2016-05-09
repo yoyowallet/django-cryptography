@@ -1,27 +1,26 @@
 import decimal
-import unittest
+import json
 import uuid
-from datetime import timedelta
-from decimal import Decimal
 
 from django import forms
 from django.conf import settings
+from django.core import exceptions, serializers, validators
 from django.core.management import call_command
 from django.db import IntegrityError, connection, models
 from django.test import TestCase, override_settings
+from django.test.utils import freeze_time
 from django.utils import timezone
 from django.utils.six import binary_type
 
-from django_cryptography.fields import EncryptedField
+from django_cryptography.fields import EncryptedField, Expired
 from .models import (
-    EncryptedFieldSubclass,  EncryptedIntegerModel,
-    EncryptedNullableIntegerModel, EncryptedCharModel, EncryptedDateTimeModel,
-    OtherEncryptedTypesModel, TestModel,
+    EncryptedFieldSubclass, EncryptedIntegerModel,
+    EncryptedNullableIntegerModel, EncryptedTTLIntegerModel,
+    EncryptedCharModel, EncryptedDateTimeModel, OtherEncryptedTypesModel,
 )
 
 
 class TestSaveLoad(TestCase):
-
     def test_integer(self):
         instance = EncryptedIntegerModel(field=42)
         instance.save()
@@ -63,7 +62,16 @@ class TestSaveLoad(TestCase):
         with self.assertRaises(IntegrityError):
             instance.save()
 
-    def test_other_array_types(self):
+    def test_ttl(self):
+        with freeze_time(499162800):
+            instance = EncryptedTTLIntegerModel(field=42)
+            instance.save()
+
+        with freeze_time(123456789):
+            loaded = EncryptedTTLIntegerModel.objects.get()
+            self.assertIs(loaded.field, Expired)
+
+    def test_other_types(self):
         instance = OtherEncryptedTypesModel(
             ips='192.168.0.1',
             uuids=uuid.uuid4(),
@@ -75,51 +83,44 @@ class TestSaveLoad(TestCase):
         self.assertEqual(instance.uuids, loaded.uuids)
         self.assertEqual(instance.decimals, loaded.decimals)
 
+    def test_updates(self):
+        with self.assertNumQueries(2):
+            instance = EncryptedCharModel.objects.create(field='Hello, world!')
+            instance.field = 'Goodbye, world!'
+            instance.save()
+        loaded = EncryptedCharModel.objects.get()
+        self.assertEqual(instance.field, loaded.field)
 
-class TestEncryptedField(TestCase):
+
+class TestQuerying(TestCase):
+    def setUp(self):
+        self.objs = [
+            EncryptedNullableIntegerModel.objects.create(field=1),
+            EncryptedNullableIntegerModel.objects.create(field=2),
+            EncryptedNullableIntegerModel.objects.create(field=3),
+            EncryptedNullableIntegerModel.objects.create(field=None),
+        ]
+
+    def test_isnull(self):
+        self.assertSequenceEqual(
+            self.objs[-1:],
+            EncryptedNullableIntegerModel.objects.filter(field__isnull=True)
+        )
+
+    def test_unsupported(self):
+        with self.assertRaises(exceptions.FieldError):
+            EncryptedNullableIntegerModel.objects.filter(field__exact=2)
+
+
+class TestChecks(TestCase):
     def test_settings_has_key(self):
         key = settings.CRYPTOGRAPHY_KEY
         self.assertIsNotNone(key)
         self.assertIsInstance(key, binary_type)
 
-    def test_field_match(self):
-        obj = TestModel(boolean=True, char='Hello, world!',
-                        decimal=Decimal('1.00'), duration=timedelta(1),
-                        float=42.0, integer=42, ip_addres='::1',
-                        text='Too short...', uuid=uuid.uuid4())
-        obj.encrypted_boolean = obj.boolean
-        obj.encrypted_char = obj.char
-        obj.encrypted_decimal = obj.decimal
-        obj.encrypted_duration = obj.duration
-        obj.encrypted_float = obj.float
-        obj.encrypted_integer = obj.integer
-        obj.encrypted_ip_addres = obj.ip_addres
-        obj.encrypted_text = obj.text
-        obj.encrypted_uuid = obj.uuid
-        obj.save()
-
-        # Fetch the object
-        obj = TestModel.objects.get()
-        self.assertEqual(obj.boolean, obj.encrypted_boolean)
-        self.assertEqual(obj.char, obj.encrypted_char)
-        self.assertEqual(obj.date, obj.encrypted_date)
-        self.assertEqual(obj.decimal, obj.encrypted_decimal)
-        self.assertEqual(obj.duration, obj.encrypted_duration)
-        self.assertEqual(obj.float, obj.encrypted_float)
-        self.assertEqual(obj.integer, obj.encrypted_integer)
-        self.assertEqual(obj.ip_addres, obj.encrypted_ip_addres)
-        self.assertEqual(obj.text, obj.encrypted_text)
-        self.assertEqual(obj.uuid, obj.encrypted_uuid)
-
-        # Update object
-        obj.encrypted_boolean = not obj.boolean
-        obj.encrypted_char = 'Goodbye, world!'
-        obj.save()
-
-        # Fetch the object
-        obj = TestModel.objects.get()
-        self.assertNotEqual(obj.boolean, obj.encrypted_boolean)
-        self.assertNotEqual(obj.char, obj.encrypted_char)
+    def test_field_description(self):
+        field = EncryptedField(models.IntegerField())
+        self.assertEqual('Encrypted Integer', field.description)
 
     def test_field_checks(self):
         class BadField(models.Model):
@@ -134,11 +135,10 @@ class TestEncryptedField(TestCase):
 
     def test_invalid_base_fields(self):
         class Related(models.Model):
-            field = EncryptedField(models.ForeignKey('models.TestModel'))
+            field = EncryptedField(models.ForeignKey('fields.EncryptedIntegerModel'))
 
         obj = Related()
         errors = obj.check()
-
         self.assertEqual(1, len(errors))
         self.assertEqual('encrypted.E002', errors[0].id)
 
@@ -151,6 +151,12 @@ class TestMigrations(TestCase):
         name, path, args, kwargs = field.deconstruct()
         new = EncryptedField(*args, **kwargs)
         self.assertEqual(type(new.base_field), type(field.base_field))
+
+    def test_deconstruct_with_ttl(self):
+        field = EncryptedField(models.IntegerField(), ttl=60)
+        name, path, args, kwargs = field.deconstruct()
+        new = EncryptedField(*args, **kwargs)
+        self.assertEqual(new.ttl, field.ttl)
 
     def test_deconstruct_args(self):
         field = EncryptedField(models.CharField(max_length=20))
@@ -181,10 +187,82 @@ class TestMigrations(TestCase):
             self.assertNotIn(table_name, connection.introspection.table_names(cursor))
 
 
-class TestSimpleFormField(TestCase):
+class TestSerialization(TestCase):
+    test_data_integer = (
+        '[{"fields": {"field": 42}, "model": "fields.encryptedintegermodel", "pk": null}]'
+    )
+    test_data_char = (
+        '[{"fields": {"field": "Hello, world!"}, "model": "fields.encryptedcharmodel", "pk": null}]'
+    )
+
+    def test_integer_dumping(self):
+        instance = EncryptedIntegerModel(field=42)
+        data = serializers.serialize('json', [instance])
+        self.assertEqual(json.loads(self.test_data_integer), json.loads(data))
+
+    def test_integer_loading(self):
+        instance = list(serializers.deserialize('json', self.test_data_integer))[0].object
+        self.assertEqual(42, instance.field)
+
+    def test_char_dumping(self):
+        instance = EncryptedCharModel(field='Hello, world!')
+        data = serializers.serialize('json', [instance])
+        self.assertEqual(json.loads(self.test_data_char), json.loads(data))
+
+    def test_char_loading(self):
+        instance = list(serializers.deserialize('json', self.test_data_char))[0].object
+        self.assertEqual('Hello, world!', instance.field)
+
+
+class TestValidation(TestCase):
+    def test_unbounded(self):
+        field = EncryptedField(models.IntegerField())
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            field.clean(None, None)
+        self.assertEqual('null', cm.exception.code)
+        self.assertEqual('This field cannot be null.', cm.exception.messages[0])
+
+    def test_blank_true(self):
+        field = EncryptedField(models.IntegerField(blank=True, null=True))
+        # This should not raise a validation error
+        field.clean(None, None)
+
+    def test_with_validators(self):
+        field = EncryptedField(models.IntegerField(validators=[validators.MinValueValidator(1)]))
+        field.clean(1, None)
+        with self.assertRaises(exceptions.ValidationError) as cm:
+            field.clean(0, None)
+        self.assertEqual('Ensure this value is greater than or equal to 1.', cm.exception.messages[0])
+
+
+class TestFormField(TestCase):
+    class EncryptedCharModelForm(forms.ModelForm):
+        class Meta:
+            fields = '__all__'
+            model = EncryptedCharModel
 
     def test_model_field_formfield(self):
         model_field = EncryptedField(models.CharField(max_length=27))
         form_field = model_field.formfield()
         self.assertIsInstance(form_field, forms.CharField)
         self.assertEqual(form_field.max_length, 27)
+
+    def test_model_form(self):
+        data = {'field': 'Hello, world!'}
+        form = self.EncryptedCharModelForm(data)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual({'field': 'Hello, world!'}, form.cleaned_data)
+
+        instance = form.save()
+        loaded = EncryptedCharModel.objects.get()
+        self.assertEqual(instance.field, loaded.field)
+
+    def test_model_form_update(self):
+        data = {'field': 'Goodbye, world!'}
+        instance = EncryptedCharModel.objects.create(field='Hello, world!')
+        form = self.EncryptedCharModelForm(data, instance=instance)
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+
+        loaded = EncryptedCharModel.objects.get()
+        self.assertEqual(data['field'], loaded.field)

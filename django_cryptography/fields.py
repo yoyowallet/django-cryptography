@@ -120,7 +120,7 @@ class EncryptedField(PickledField):
         ttl = kwargs.pop('ttl', None)
 
         self._fernet = FernetBytes(key)
-        self._ttl = ttl
+        self.ttl = ttl
         self.base_field = base_field
         super(PickledField, self).__init__(**kwargs)
 
@@ -149,7 +149,7 @@ class EncryptedField(PickledField):
     def _load(self, value):
         try:
             return super(EncryptedField, self)._load(
-                self._fernet.decrypt(value, self._ttl)
+                self._fernet.decrypt(value, self.ttl)
             )
         except SignatureExpired:
             return Expired
@@ -182,9 +182,9 @@ class EncryptedField(PickledField):
 
     def deconstruct(self):
         name, path, args, kwargs = super(PickledField, self).deconstruct()
-        kwargs.update({
-            'base_field': self.base_field,
-        })
+        kwargs['base_field'] = self.base_field
+        if self.ttl is not None:
+            kwargs['ttl'] = self.ttl
         return name, path, args, kwargs
 
     def run_validators(self, value):
@@ -200,6 +200,12 @@ class EncryptedField(PickledField):
 
     def pre_save(self, model_instance, add):
         return self.base_field.pre_save(model_instance, add)
+
+    def value_to_string(self, obj):
+        return self.base_field.value_to_string(obj)
+
+    def to_python(self, value):
+        return self.base_field.to_python(value)
 
     def formfield(self, **kwargs):
         return self.base_field.formfield(**kwargs)
