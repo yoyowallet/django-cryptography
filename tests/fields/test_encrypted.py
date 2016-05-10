@@ -35,15 +35,17 @@ class TestSaveLoad(TestCase):
 
     def test_dates(self):
         instance = EncryptedDateTimeModel(
-            datetimes=timezone.now(),
-            dates=timezone.now().date(),
-            times=timezone.now().time(),
+            datetime=timezone.now(),
+            date=timezone.now().date(),
+            time=timezone.now().time(),
         )
         instance.save()
         loaded = EncryptedDateTimeModel.objects.get()
-        self.assertEqual(instance.datetimes, loaded.datetimes)
-        self.assertEqual(instance.dates, loaded.dates)
-        self.assertEqual(instance.times, loaded.times)
+        self.assertEqual(instance.datetime, loaded.datetime)
+        self.assertEqual(instance.date, loaded.date)
+        self.assertEqual(instance.time, loaded.time)
+        self.assertTrue(instance.auto_now)
+        self.assertEqual(instance.auto_now, loaded.auto_now)
 
     def test_default_null(self):
         instance = EncryptedNullableIntegerModel()
@@ -73,15 +75,15 @@ class TestSaveLoad(TestCase):
 
     def test_other_types(self):
         instance = OtherEncryptedTypesModel(
-            ips='192.168.0.1',
-            uuids=uuid.uuid4(),
-            decimals=decimal.Decimal(1.25),
+            ip='192.168.0.1',
+            uuid=uuid.uuid4(),
+            decimal=decimal.Decimal(1.25),
         )
         instance.save()
         loaded = OtherEncryptedTypesModel.objects.get()
-        self.assertEqual(instance.ips, loaded.ips)
-        self.assertEqual(instance.uuids, loaded.uuids)
-        self.assertEqual(instance.decimals, loaded.decimals)
+        self.assertEqual(instance.ip, loaded.ip)
+        self.assertEqual(instance.uuid, loaded.uuid)
+        self.assertEqual(instance.decimal, loaded.decimal)
 
     def test_updates(self):
         with self.assertNumQueries(2):

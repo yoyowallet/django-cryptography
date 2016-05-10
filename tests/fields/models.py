@@ -28,15 +28,16 @@ class EncryptedCharModel(models.Model):
 
 
 class EncryptedDateTimeModel(models.Model):
-    datetimes = EncryptedField(models.DateTimeField())
-    dates = EncryptedField(models.DateField())
-    times = EncryptedField(models.TimeField())
+    datetime = EncryptedField(models.DateTimeField())
+    date = EncryptedField(models.DateField())
+    time = EncryptedField(models.TimeField())
+    auto_now = EncryptedField(models.DateTimeField(auto_now=True))
 
 
 class OtherEncryptedTypesModel(models.Model):
-    ips = EncryptedField(models.GenericIPAddressField())
-    uuids = EncryptedField(models.UUIDField())
-    decimals = EncryptedField(models.DecimalField(max_digits=5, decimal_places=2))
+    ip = EncryptedField(models.GenericIPAddressField())
+    uuid = EncryptedField(models.UUIDField())
+    decimal = EncryptedField(models.DecimalField(max_digits=5, decimal_places=2))
 
 
 class EncryptedFieldSubclass(EncryptedField):
