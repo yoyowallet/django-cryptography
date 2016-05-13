@@ -14,6 +14,7 @@ class CryptographyConf(AppConf):
 
     class Meta:
         prefix = 'cryptography'
+        proxy = True
 
     def configure_salt(self, value):
         return force_bytes(value)

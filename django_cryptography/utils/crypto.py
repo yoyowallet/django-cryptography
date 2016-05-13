@@ -6,9 +6,12 @@ from cryptography.hazmat.primitives import constant_time, hashes, padding
 from cryptography.hazmat.primitives.ciphers import algorithms, Cipher, modes
 from cryptography.hazmat.primitives.hmac import HMAC
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from django.conf import settings
 from django.utils import crypto
 from django.utils.encoding import force_bytes
+
+from ..conf import CryptographyConf
+
+settings = CryptographyConf()
 
 
 class InvalidToken(Exception):
