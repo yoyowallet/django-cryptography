@@ -52,15 +52,6 @@ Installation
 
    pip install django-cryptography
 
-Add ``'django_cryptography'`` to your ``INSTALLED_APPS``.
-
-.. code-block:: python
-
-   INSTALLED_APPS = [
-       ...
-       'django_cryptography',
-   ]
-
 .. _Cryptography: https://cryptography.io/
 .. _Django: https://www.djangoproject.com/
 .. _Python: https://www.python.org/
