@@ -3,7 +3,7 @@ from base64 import b64decode, b64encode
 from django.core import checks
 from django.db import models
 from django.utils import six
-from django.utils.encoding import force_bytes
+from django.utils.encoding import force_bytes, force_text
 from django.utils.translation import ugettext_lazy as _
 
 from django_cryptography.core.signing import SignatureExpired
@@ -16,6 +16,8 @@ except ImportError:
 
 Expired = object()
 """Represents an expired encryption value."""
+
+_CACHE = {}
 
 
 class PickledField(models.Field):
@@ -182,7 +184,7 @@ class EncryptedField(PickledField):
 
     def deconstruct(self):
         name, path, args, kwargs = super(PickledField, self).deconstruct()
-        kwargs['base_field'] = self.base_field
+        args.insert(0, self.base_field)
         if self.ttl is not None:
             kwargs['ttl'] = self.ttl
         return name, path, args, kwargs
@@ -209,3 +211,105 @@ class EncryptedField(PickledField):
 
     def formfield(self, **kwargs):
         return self.base_field.formfield(**kwargs)
+
+
+def encrypt(base_field, key=None, ttl=None):
+    base_class = base_field.__class__
+
+    class EncryptedMixin(base_class):
+        supported_lookups = ('isnull',)
+
+        def __init__(self, *args, **kwargs):
+            key = kwargs.pop('key', None)
+            ttl = kwargs.pop('ttl', None)
+
+            self._fernet = FernetBytes(key)
+            self.ttl = ttl
+            super(EncryptedMixin, self).__init__(*args, **kwargs)
+
+        @property
+        def description(self):
+            return _('Encrypted %s') % super(EncryptedMixin, self).description
+
+        def _dump(self, value):
+            return self._fernet.encrypt(
+                PickledField._dump(self, value)
+            )
+
+        def _load(self, value):
+            try:
+                return PickledField._load(
+                    self, self._fernet.decrypt(value, self.ttl)
+                )
+            except SignatureExpired:
+                return Expired
+
+        def check(self, **kwargs):
+            errors = super(EncryptedMixin, self).check(**kwargs)
+            if getattr(self, 'remote_field', self.rel):
+                errors.append(
+                    checks.Error(
+                        'Base field for encrypted cannot be a related field.',
+                        hint=None,
+                        obj=self,
+                        id='encrypted.E002'
+                    )
+                )
+            return errors
+
+        def deconstruct(self):
+            name, path, args, kwargs = super(EncryptedMixin, self).deconstruct()
+            name = force_text(self.name, strings_only=True)
+            path = "%s.%s" % (encrypt.__module__, encrypt.__name__)
+            args = [base_class(*args, **kwargs)]
+            kwargs = {}
+            if self.ttl is not None:
+                kwargs['ttl'] = self.ttl
+            return name, path, args, kwargs
+
+        def get_lookup(self, lookup_name):
+            if lookup_name not in self.supported_lookups:
+                return
+            return super(EncryptedMixin, self).get_lookup(lookup_name)
+
+        def get_transform(self, lookup_name):
+            if lookup_name not in self.supported_lookups:
+                return
+            return super(EncryptedMixin, self).get_transform(lookup_name)
+
+        def get_internal_type(self):
+            return "BinaryField"
+
+        def get_db_prep_value(self, value, connection, prepared=False):
+            value = models.Field.get_db_prep_value(self, value, connection, prepared)
+            if value is not None:
+                return connection.Database.Binary(self._dump(value))
+            return value
+
+        get_db_prep_save = models.Field.get_db_prep_save
+
+        def from_db_value(self, value, expression, connection, context):
+            if value is not None:
+                return self._load(force_bytes(value))
+            return value
+
+        # def value_to_string(self, obj):
+        #     """Pickled data is serialized as base64"""
+        #     value = self.value_from_object(obj)
+        #     return b64encode(self._dump(value)).decode('ascii')
+
+        # def to_python(self, value):
+        #     # If it's a string, it should be base64-encoded data
+        #     if isinstance(value, six.text_type):
+        #         return self._load(b64decode(force_bytes(value)))
+        #     return value
+
+    EncryptedMixin.__name__ = 'Encrypted' + base_class.__name__
+
+    if base_class not in _CACHE:
+        _CACHE[base_class] = EncryptedMixin
+    encrypted_field = _CACHE[base_class]
+
+    name, path, args, kwargs = base_field.deconstruct()
+    kwargs.update({'key': key, 'ttl': ttl})
+    return encrypted_field(*args, **kwargs)
