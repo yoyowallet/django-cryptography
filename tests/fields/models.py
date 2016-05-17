@@ -40,5 +40,5 @@ class OtherEncryptedTypesModel(models.Model):
     decimal = encrypt(models.DecimalField(max_digits=5, decimal_places=2))
 
 
-class EncryptedFieldSubclass(encrypt(models.IntegerField())):
+class EncryptedFieldSubclass(encrypt(models.IntegerField)):
     pass
