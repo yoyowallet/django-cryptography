@@ -1,4 +1,3 @@
-import sys
 from base64 import b64decode, b64encode
 
 from django.core import checks
@@ -14,6 +13,8 @@ try:
     from django.utils.six.moves import cPickle as pickle
 except ImportError:
     import pickle
+
+FIELD_CACHE = {}
 
 Expired = object()
 """Represents an expired encryption value."""
@@ -84,26 +85,10 @@ class PickledField(models.Field):
         return value
 
 
-class EncryptedField(models.Field):
+class EncryptedMixin(object):
     """
-    A field for storing encrypted data
+    A field mixin storing encrypted data
 
-    :param base_field: This is a required argument.
-
-        Specifies the underlying data type to be encrypted. It should be an
-        instance of a subclass of
-        :class:`~django.db.models.Field`. For example, it could be an
-        :class:`~django.db.models.IntegerField` or a
-        :class:`~django.db.models.CharField`. Most field types are
-        permitted, with the exception of those handling relational data
-        (:class:`~django.db.models.ForeignKey`,
-        :class:`~django.db.models.OneToOneField` and
-        :class:`~django.db.models.ManyToManyField`).
-
-        Transformation of values between the database and the model,
-        validation of data and configuration, and serialization are all
-        delegated to the underlying base field.
-    :type base_field: ~django.db.models.fields.Field
     :param bytes key: This is an optional argument.
 
         Allows for specifying an instance specific encryption key.
@@ -121,11 +106,11 @@ class EncryptedField(models.Field):
 
         self._fernet = FernetBytes(key)
         self.ttl = ttl
-        super(self.__class__, self).__init__(*args, **kwargs)
+        super(EncryptedMixin, self).__init__(*args, **kwargs)
 
     @property
     def description(self):
-        return _('Encrypted %s') % super(self.__class__, self).description
+        return _('Encrypted %s') % super(EncryptedMixin, self).description
 
     def _dump(self, value):
         return self._fernet.encrypt(
@@ -141,7 +126,7 @@ class EncryptedField(models.Field):
             return Expired
 
     def check(self, **kwargs):
-        errors = super(self.__class__, self).check(**kwargs)
+        errors = super(EncryptedMixin, self).check(**kwargs)
         if getattr(self, 'remote_field', self.rel):
             errors.append(
                 checks.Error(
@@ -154,7 +139,7 @@ class EncryptedField(models.Field):
         return errors
 
     def deconstruct(self):
-        name, path, args, kwargs = super(self.__class__, self).deconstruct()
+        name, path, args, kwargs = super(EncryptedMixin, self).deconstruct()
         base_field = six.next((base for base in self.__class__.__bases__
                                if issubclass(base, models.Field)))
         name = force_text(self.name, strings_only=True)
@@ -168,12 +153,12 @@ class EncryptedField(models.Field):
     def get_lookup(self, lookup_name):
         if lookup_name not in self.supported_lookups:
             return
-        return super(self.__class__, self).get_lookup(lookup_name)
+        return super(EncryptedMixin, self).get_lookup(lookup_name)
 
     def get_transform(self, lookup_name):
         if lookup_name not in self.supported_lookups:
             return
-        return super(self.__class__, self).get_transform(lookup_name)
+        return super(EncryptedMixin, self).get_transform(lookup_name)
 
     def get_internal_type(self):
         return "BinaryField"
@@ -199,15 +184,15 @@ def get_encrypted_field(base_field):
     the same class reference for a field.
 
     :type base_field: ~django.db.models.fields.Field
-    :rtype: EncryptedField
+    :rtype: models.Field
     """
     assert not isinstance(base_field, models.Field)
     field_name = 'Encrypted' + base_field.__name__
-    if not hasattr(sys.modules[__name__], field_name):
-        setattr(sys.modules[__name__], field_name, type(EncryptedField)(
-            field_name, (base_field,), dict(EncryptedField.__dict__)
-        ))
-    return getattr(sys.modules[__name__], field_name)
+    if base_field not in FIELD_CACHE:
+        FIELD_CACHE[base_field] = type(
+            field_name, (EncryptedMixin, base_field), {}
+        )
+    return FIELD_CACHE[base_field]
 
 
 def encrypt(base_field, key=None, ttl=None):
@@ -223,14 +208,13 @@ def encrypt(base_field, key=None, ttl=None):
         The amount of time in seconds that a value can be stored for. If the
         time to live of the data has passed, it will become unreadable.
         The expired value will return an :class:`Expired` object.
-    :rtype: EncryptedField
+    :rtype: models.Field
     """
     if not isinstance(base_field, models.Field):
         assert key is None
         assert ttl is None
         return get_encrypted_field(base_field)
 
-    base_class = base_field.__class__
     name, path, args, kwargs = base_field.deconstruct()
     kwargs.update({'key': key, 'ttl': ttl})
-    return get_encrypted_field(base_class)(*args, **kwargs)
+    return get_encrypted_field(base_field.__class__)(*args, **kwargs)
