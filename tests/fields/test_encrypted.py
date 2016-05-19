@@ -167,11 +167,10 @@ class TestMigrations(TestCase):
         new = encrypt(*args, **kwargs)
         self.assertEqual(new.max_length, field.max_length)
 
-    @unittest.skip('Should we allow a decorated field to be subclassed?')
     def test_subclass_deconstruct(self):
         field = encrypt(models.IntegerField())
         name, path, args, kwargs = field.deconstruct()
-        self.assertEqual('django_cryptography.fields.EncryptedIntegerField', path)
+        self.assertEqual('django_cryptography.fields.encrypt', path)
 
         field = EncryptedFieldSubclass()
         name, path, args, kwargs = field.deconstruct()

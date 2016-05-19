@@ -3,7 +3,7 @@ from base64 import b64decode, b64encode
 from django.core import checks
 from django.db import models
 from django.utils import six
-from django.utils.encoding import force_bytes, force_text
+from django.utils.encoding import force_bytes
 from django.utils.translation import ugettext_lazy as _
 
 from django_cryptography.core.signing import SignatureExpired
@@ -140,14 +140,13 @@ class EncryptedMixin(object):
 
     def deconstruct(self):
         name, path, args, kwargs = super(EncryptedMixin, self).deconstruct()
-        base_field = six.next((base for base in self.__class__.__bases__
-                               if issubclass(base, models.Field)))
-        name = force_text(self.name, strings_only=True)
-        path = "%s.%s" % (encrypt.__module__, encrypt.__name__)
-        args = [base_field(*args, **kwargs)]
-        kwargs = {}
-        if self.ttl is not None:
-            kwargs['ttl'] = self.ttl
+        # Determine if the class that subclassed us has been subclassed.
+        if not self.__class__.__mro__.index(EncryptedMixin) > 1:
+            path = "%s.%s" % (encrypt.__module__, encrypt.__name__)
+            args = [self.base_class(*args, **kwargs)]
+            kwargs = {}
+            if self.ttl is not None:
+                kwargs['ttl'] = self.ttl
         return name, path, args, kwargs
 
     def get_lookup(self, lookup_name):
@@ -177,29 +176,31 @@ class EncryptedMixin(object):
         return value
 
 
-def get_encrypted_field(base_field):
+def get_encrypted_field(base_class):
     """
     A get or create method for encrypted fields, we cache the field in
     the module to avoid recreation. This also allows us to always return
     the same class reference for a field.
 
-    :type base_field: ~django.db.models.fields.Field
-    :rtype: models.Field
+    :type base_class: models.Field[T]
+    :rtype: models.Field[EncryptedMixin, T]
     """
-    assert not isinstance(base_field, models.Field)
-    field_name = 'Encrypted' + base_field.__name__
-    if base_field not in FIELD_CACHE:
-        FIELD_CACHE[base_field] = type(
-            field_name, (EncryptedMixin, base_field), {}
+    assert not isinstance(base_class, models.Field)
+    field_name = 'Encrypted' + base_class.__name__
+    if base_class not in FIELD_CACHE:
+        FIELD_CACHE[base_class] = type(
+            field_name, (EncryptedMixin, base_class), {
+                'base_class': base_class,
+            }
         )
-    return FIELD_CACHE[base_field]
+    return FIELD_CACHE[base_class]
 
 
 def encrypt(base_field, key=None, ttl=None):
     """
     A decorator for creating encrypted model fields.
 
-    :type base_field: ~django.db.models.fields.Field
+    :type base_field: models.Field[T]
     :param bytes key: This is an optional argument.
 
         Allows for specifying an instance specific encryption key.
@@ -208,7 +209,7 @@ def encrypt(base_field, key=None, ttl=None):
         The amount of time in seconds that a value can be stored for. If the
         time to live of the data has passed, it will become unreadable.
         The expired value will return an :class:`Expired` object.
-    :rtype: models.Field
+    :rtype: models.Field[EncryptedMixin, T]
     """
     if not isinstance(base_field, models.Field):
         assert key is None
