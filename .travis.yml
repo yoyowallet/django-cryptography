@@ -25,9 +25,9 @@ env:
   - DJANGO="Django>=1.10a1,<1.11"
   - DJANGO="https://github.com/django/django/archive/master.tar.gz"
 before_install:
-  - pip install -q codecov
+  - pip install --quiet codecov
 install:
-  - pip install -q $DJANGO
+  - pip install --quiet --pre $DJANGO
   - python setup.py -q install
 script:
   - coverage run setup.py -v test
