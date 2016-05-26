@@ -1,5 +1,6 @@
 import decimal
 import json
+import unittest
 import uuid
 
 from django import forms
@@ -12,7 +13,7 @@ from django.test.utils import freeze_time
 from django.utils import timezone
 from django.utils.six import binary_type
 
-from django_cryptography.fields import EncryptedField, Expired
+from django_cryptography.fields import Expired, encrypt
 from .models import (
     EncryptedFieldSubclass, EncryptedIntegerModel,
     EncryptedNullableIntegerModel, EncryptedTTLIntegerModel,
@@ -121,23 +122,23 @@ class TestChecks(TestCase):
         self.assertIsInstance(key, binary_type)
 
     def test_field_description(self):
-        field = EncryptedField(models.IntegerField())
+        field = encrypt(models.IntegerField())
         self.assertEqual('Encrypted Integer', field.description)
 
     def test_field_checks(self):
         class BadField(models.Model):
-            field = EncryptedField(models.CharField())
+            field = encrypt(models.CharField())
 
         model = BadField()
         errors = model.check()
         self.assertEqual(len(errors), 1)
         # The inner CharField is missing a max_length.
-        self.assertEqual('encrypted.E001', errors[0].id)
+        self.assertEqual('fields.E120', errors[0].id)
         self.assertIn('max_length', errors[0].msg)
 
     def test_invalid_base_fields(self):
         class Related(models.Model):
-            field = EncryptedField(models.ForeignKey('fields.EncryptedIntegerModel'))
+            field = encrypt(models.ForeignKey('fields.EncryptedIntegerModel'))
 
         obj = Related()
         errors = obj.check()
@@ -149,27 +150,27 @@ class TestMigrations(TestCase):
     available_apps = ['tests.fields']
 
     def test_deconstruct(self):
-        field = EncryptedField(models.IntegerField())
+        field = encrypt(models.IntegerField())
         name, path, args, kwargs = field.deconstruct()
-        new = EncryptedField(*args, **kwargs)
-        self.assertEqual(type(new.base_field), type(field.base_field))
+        new = encrypt(*args, **kwargs)
+        self.assertEqual(type(new), type(field))
 
     def test_deconstruct_with_ttl(self):
-        field = EncryptedField(models.IntegerField(), ttl=60)
+        field = encrypt(models.IntegerField(), ttl=60)
         name, path, args, kwargs = field.deconstruct()
-        new = EncryptedField(*args, **kwargs)
+        new = encrypt(*args, **kwargs)
         self.assertEqual(new.ttl, field.ttl)
 
     def test_deconstruct_args(self):
-        field = EncryptedField(models.CharField(max_length=20))
+        field = encrypt(models.CharField(max_length=20))
         name, path, args, kwargs = field.deconstruct()
-        new = EncryptedField(*args, **kwargs)
-        self.assertEqual(new.base_field.max_length, field.base_field.max_length)
+        new = encrypt(*args, **kwargs)
+        self.assertEqual(new.max_length, field.max_length)
 
     def test_subclass_deconstruct(self):
-        field = EncryptedField(models.IntegerField())
+        field = encrypt(models.IntegerField())
         name, path, args, kwargs = field.deconstruct()
-        self.assertEqual('django_cryptography.fields.EncryptedField', path)
+        self.assertEqual('django_cryptography.fields.encrypt', path)
 
         field = EncryptedFieldSubclass()
         name, path, args, kwargs = field.deconstruct()
@@ -218,19 +219,19 @@ class TestSerialization(TestCase):
 
 class TestValidation(TestCase):
     def test_unbounded(self):
-        field = EncryptedField(models.IntegerField())
+        field = encrypt(models.IntegerField())
         with self.assertRaises(exceptions.ValidationError) as cm:
             field.clean(None, None)
         self.assertEqual('null', cm.exception.code)
         self.assertEqual('This field cannot be null.', cm.exception.messages[0])
 
     def test_blank_true(self):
-        field = EncryptedField(models.IntegerField(blank=True, null=True))
+        field = encrypt(models.IntegerField(blank=True, null=True))
         # This should not raise a validation error
         field.clean(None, None)
 
     def test_with_validators(self):
-        field = EncryptedField(models.IntegerField(validators=[validators.MinValueValidator(1)]))
+        field = encrypt(models.IntegerField(validators=[validators.MinValueValidator(1)]))
         field.clean(1, None)
         with self.assertRaises(exceptions.ValidationError) as cm:
             field.clean(0, None)
@@ -244,7 +245,7 @@ class TestFormField(TestCase):
             model = EncryptedCharModel
 
     def test_model_field_formfield(self):
-        model_field = EncryptedField(models.CharField(max_length=27))
+        model_field = encrypt(models.CharField(max_length=27))
         form_field = model_field.formfield()
         self.assertIsInstance(form_field, forms.CharField)
         self.assertEqual(form_field.max_length, 27)

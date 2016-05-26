@@ -1,6 +1,6 @@
 from django.db import models
 
-from django_cryptography.fields import EncryptedField, PickledField
+from django_cryptography.fields import PickledField, encrypt
 
 
 class PickledModel(models.Model):
@@ -12,34 +12,33 @@ class NullablePickledModel(models.Model):
 
 
 class EncryptedIntegerModel(models.Model):
-    field = EncryptedField(models.IntegerField())
+    field = encrypt(models.IntegerField())
 
 
 class EncryptedNullableIntegerModel(models.Model):
-    field = EncryptedField(models.IntegerField(), blank=True, null=True)
+    field = encrypt(models.IntegerField(blank=True, null=True))
 
 
 class EncryptedTTLIntegerModel(models.Model):
-    field = EncryptedField(models.IntegerField(), ttl=60)
+    field = encrypt(models.IntegerField(), ttl=60)
 
 
 class EncryptedCharModel(models.Model):
-    field = EncryptedField(models.CharField(max_length=15))
+    field = encrypt(models.CharField(max_length=15))
 
 
 class EncryptedDateTimeModel(models.Model):
-    datetime = EncryptedField(models.DateTimeField())
-    date = EncryptedField(models.DateField())
-    time = EncryptedField(models.TimeField())
-    auto_now = EncryptedField(models.DateTimeField(auto_now=True))
+    datetime = encrypt(models.DateTimeField())
+    date = encrypt(models.DateField())
+    time = encrypt(models.TimeField())
+    auto_now = encrypt(models.DateTimeField(auto_now=True))
 
 
 class OtherEncryptedTypesModel(models.Model):
-    ip = EncryptedField(models.GenericIPAddressField())
-    uuid = EncryptedField(models.UUIDField())
-    decimal = EncryptedField(models.DecimalField(max_digits=5, decimal_places=2))
+    ip = encrypt(models.GenericIPAddressField())
+    uuid = encrypt(models.UUIDField())
+    decimal = encrypt(models.DecimalField(max_digits=5, decimal_places=2))
 
 
-class EncryptedFieldSubclass(EncryptedField):
-    def __init__(self, *args, **kwargs):
-        super(EncryptedFieldSubclass, self).__init__(models.IntegerField())
+class EncryptedFieldSubclass(encrypt(models.IntegerField)):
+    pass
