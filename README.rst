@@ -8,12 +8,14 @@ Cryptography_ as the backend provider.
 
 Do not forget to read the documentation_.
 
-.. image:: https://img.shields.io/travis/georgemarshall/django-cryptography.svg
+.. image:: https://img.shields.io/travis/georgemarshall/django-cryptography/master.svg
    :target: https://travis-ci.org/georgemarshall/django-cryptography
-.. image:: https://img.shields.io/codecov/c/github/georgemarshall/django-cryptography.svg
-   :target: https://codecov.io/github/georgemarshall/django-cryptography
-.. image:: https://www.quantifiedcode.com/api/v1/project/ceb16c3d35264fd0a1be165af1456d4e/badge.svg
-   :target: https://www.quantifiedcode.com/app/project/ceb16c3d35264fd0a1be165af1456d4e
+   :alt: Builds
+.. image:: https://img.shields.io/codecov/c/github/georgemarshall/django-cryptography/master.svg
+   :target: https://codecov.io/gh/georgemarshall/django-cryptography/branch/master
+   :alt: Code coverage
+.. image:: https://www.quantifiedcode.com/api/v1/project/ceb16c3d35264fd0a1be165af1456d4e/snapshot/origin:master:HEAD/badge.svg
+   :target: https://www.quantifiedcode.com/app/project/ceb16c3d35264fd0a1be165af1456d4e?branch=origin%2Fmaster
    :alt: Code issues
 
 Cryptography by example
