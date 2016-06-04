@@ -2,8 +2,9 @@ Cryptography by example
 =======================
 
 Using symmetrical encryption to store sensitive data in the database.
-Wrap the desired model field with :function:`encrypt` to easily
-protect its contents.
+Wrap the desired model field with
+:func:`~django_cryptography.fields.encrypt` to easily protect its
+contents.
 
 .. code-block:: python
 
@@ -17,5 +18,5 @@ protect its contents.
        sensitive_data = encrypt(models.CharField(max_length=50))
 
 The data will now be automatically encrypted when saved to the
-database. :function:`encrypt` uses an encryption that allows for
-bi-directional data retrieval.
+database. :func:`~django_cryptography.fields.encrypt` uses an
+encryption that allows for bi-directional data retrieval.
