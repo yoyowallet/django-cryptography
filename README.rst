@@ -55,4 +55,4 @@ Installation
 .. _Cryptography: https://cryptography.io/
 .. _Django: https://www.djangoproject.com/
 .. _Python: https://www.python.org/
-.. _documentation: https://django-cryptography.readthedocs.org/en/latest/
+.. _documentation: https://django-cryptography.readthedocs.io/en/latest/
