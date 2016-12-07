@@ -4,8 +4,8 @@ Releases
 0.3 - master_
 -------------
 
-0.2 - 0.2.x_
-------------
+0.2 - 2016-12-06
+----------------
 
 * Refactored :class:`~django_cryptography.fields.EncryptedField` into
   :func:`~django_cryptography.fields.encrypt` decorator.
