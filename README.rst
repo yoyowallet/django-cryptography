@@ -14,9 +14,6 @@ Do not forget to read the documentation_.
 .. image:: https://img.shields.io/codecov/c/github/georgemarshall/django-cryptography/master.svg
    :target: https://codecov.io/gh/georgemarshall/django-cryptography/branch/master
    :alt: Code coverage
-.. image:: https://www.quantifiedcode.com/api/v1/project/ceb16c3d35264fd0a1be165af1456d4e/snapshot/origin:master:HEAD/badge.svg
-   :target: https://www.quantifiedcode.com/app/project/ceb16c3d35264fd0a1be165af1456d4e?branch=origin%2Fmaster
-   :alt: Code issues
 
 Cryptography by example
 -----------------------
@@ -43,9 +40,9 @@ bi-directional data retrieval.
 Requirements
 ------------
 
-* Python_ (2.7, 3.3, 3.4 or 3.5)
-* Cryptography_ (1.6)
-* Django_ (1.8, 1.9 or 1.10)
+* Python_ (2.7, 3.3, 3.4, 3.5, 3.6)
+* Cryptography_ (1.6+)
+* Django_ (1.8, 1.10, 1.11)
 
 Installation
 ------------
