@@ -1,6 +1,5 @@
 import decimal
 import json
-import unittest
 import uuid
 
 from django import forms
@@ -10,8 +9,7 @@ from django.core.management import call_command
 from django.db import IntegrityError, connection, models
 from django.test import TestCase, override_settings
 from django.test.utils import freeze_time
-from django.utils import timezone
-from django.utils.six import binary_type
+from django.utils import six, timezone
 
 from django_cryptography.fields import Expired, encrypt
 from .models import (
@@ -119,7 +117,7 @@ class TestChecks(TestCase):
     def test_settings_has_key(self):
         key = settings.CRYPTOGRAPHY_KEY
         self.assertIsNotNone(key)
-        self.assertIsInstance(key, binary_type)
+        self.assertIsInstance(key, six.binary_type)
 
     def test_field_description(self):
         field = encrypt(models.IntegerField())
@@ -128,6 +126,9 @@ class TestChecks(TestCase):
     def test_field_checks(self):
         class BadField(models.Model):
             field = encrypt(models.CharField())
+
+            class Meta:
+                app_label = 'myapp'
 
         model = BadField()
         errors = model.check()
@@ -140,6 +141,9 @@ class TestChecks(TestCase):
         class Related(models.Model):
             field = encrypt(models.ForeignKey('fields.EncryptedIntegerModel'))
 
+            class Meta:
+                app_label = 'myapp'
+
         obj = Related()
         errors = obj.check()
         self.assertEqual(1, len(errors))
@@ -148,6 +152,20 @@ class TestChecks(TestCase):
 
 class TestMigrations(TestCase):
     available_apps = ['tests.fields']
+
+    def test_clone(self):
+        field = encrypt(models.IntegerField())
+        new_field = field.clone()
+        self.assertIsNot(field, new_field)
+        self.assertEqual(field.verbose_name, new_field.verbose_name)
+        self.assertNotEqual(field.creation_counter, new_field.creation_counter)
+
+    def test_subclass_clone(self):
+        field = EncryptedFieldSubclass()
+        new_field = field.clone()
+        self.assertIsNot(field, new_field)
+        self.assertEqual(field.verbose_name, new_field.verbose_name)
+        self.assertNotEqual(field.creation_counter, new_field.creation_counter)
 
     def test_deconstruct(self):
         field = encrypt(models.IntegerField())
@@ -177,7 +195,7 @@ class TestMigrations(TestCase):
         self.assertEqual('tests.fields.models.EncryptedFieldSubclass', path)
 
     @override_settings(MIGRATION_MODULES={
-        'fields': 'tests.fields.encrypted_default_migrations'})
+        'fields': 'tests.fields.test_migrations_encrypted_default'})
     def test_adding_field_with_default(self):
         table_name = 'fields_integerencrypteddefaultmodel'
         with connection.cursor() as cursor:
@@ -188,6 +206,13 @@ class TestMigrations(TestCase):
         call_command('migrate', 'fields', 'zero', verbosity=0)
         with connection.cursor() as cursor:
             self.assertNotIn(table_name, connection.introspection.table_names(cursor))
+
+    @override_settings(MIGRATION_MODULES={
+        'fields': 'tests.fields.test_migrations_normal_to_encrypted'})
+    def test_makemigrations_no_changes(self):
+        out = six.StringIO()
+        call_command('makemigrations', '--dry-run', 'fields', stdout=out)
+        self.assertIn("No changes detected in app 'fields'", out.getvalue())
 
 
 class TestSerialization(TestCase):
