@@ -1,4 +1,5 @@
 from base64 import b64decode, b64encode
+from importlib import import_module
 
 from django.core import checks
 from django.db import models
@@ -101,11 +102,10 @@ class EncryptedMixin(object):
     supported_lookups = ('isnull',)
 
     def __init__(self, *args, **kwargs):
-        key = kwargs.pop('key', None)
-        ttl = kwargs.pop('ttl', None)
+        self.key = kwargs.pop('key', None)
+        self.ttl = kwargs.pop('ttl', None)
 
-        self._fernet = FernetBytes(key)
-        self.ttl = ttl
+        self._fernet = FernetBytes(self.key)
         super(EncryptedMixin, self).__init__(*args, **kwargs)
 
     @property
@@ -137,6 +137,13 @@ class EncryptedMixin(object):
                 )
             )
         return errors
+
+    def clone(self):
+        name, path, args, kwargs = super(EncryptedMixin, self).deconstruct()
+        # Determine if the class that subclassed us has been subclassed.
+        if not self.__class__.__mro__.index(EncryptedMixin) > 1:
+            return encrypt(self.base_class(*args, **kwargs), self.key, self.ttl)
+        return self.__class__(*args, **kwargs)
 
     def deconstruct(self):
         name, path, args, kwargs = super(EncryptedMixin, self).deconstruct()

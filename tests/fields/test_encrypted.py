@@ -153,6 +153,20 @@ class TestChecks(TestCase):
 class TestMigrations(TestCase):
     available_apps = ['tests.fields']
 
+    def test_clone(self):
+        field = encrypt(models.IntegerField())
+        new_field = field.clone()
+        self.assertIsNot(field, new_field)
+        self.assertEqual(field.verbose_name, new_field.verbose_name)
+        self.assertNotEqual(field.creation_counter, new_field.creation_counter)
+
+    def test_subclass_clone(self):
+        field = EncryptedFieldSubclass()
+        new_field = field.clone()
+        self.assertIsNot(field, new_field)
+        self.assertEqual(field.verbose_name, new_field.verbose_name)
+        self.assertNotEqual(field.creation_counter, new_field.creation_counter)
+
     def test_deconstruct(self):
         field = encrypt(models.IntegerField())
         name, path, args, kwargs = field.deconstruct()
