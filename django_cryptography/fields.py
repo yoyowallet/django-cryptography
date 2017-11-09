@@ -127,7 +127,8 @@ class EncryptedMixin(object):
 
     def check(self, **kwargs):
         errors = super(EncryptedMixin, self).check(**kwargs)
-        if getattr(self, 'remote_field', self.rel):
+        # Django 1.8 compatibility for `self.rel`
+        if getattr(self, 'remote_field', getattr(self, 'rel', None)):
             errors.append(
                 checks.Error(
                     'Base field for encrypted cannot be a related field.',

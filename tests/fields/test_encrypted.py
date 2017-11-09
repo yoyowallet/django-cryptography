@@ -139,7 +139,7 @@ class TestChecks(TestCase):
 
     def test_invalid_base_fields(self):
         class Related(models.Model):
-            field = encrypt(models.ForeignKey('fields.EncryptedIntegerModel'))
+            field = encrypt(models.ForeignKey('fields.EncryptedIntegerModel', models.CASCADE))
 
             class Meta:
                 app_label = 'myapp'
