@@ -13,9 +13,13 @@ from django.utils import six, timezone
 
 from django_cryptography.fields import Expired, encrypt
 from .models import (
-    EncryptedFieldSubclass, EncryptedIntegerModel,
-    EncryptedNullableIntegerModel, EncryptedTTLIntegerModel,
-    EncryptedCharModel, EncryptedDateTimeModel, OtherEncryptedTypesModel,
+    EncryptedCharModel,
+    EncryptedDateTimeModel,
+    EncryptedFieldSubclass,
+    EncryptedIntegerModel,
+    EncryptedNullableIntegerModel,
+    EncryptedTTLIntegerModel,
+    OtherEncryptedTypesModel,
 )
 
 
@@ -105,8 +109,7 @@ class TestQuerying(TestCase):
     def test_isnull(self):
         self.assertSequenceEqual(
             self.objs[-1:],
-            EncryptedNullableIntegerModel.objects.filter(field__isnull=True)
-        )
+            EncryptedNullableIntegerModel.objects.filter(field__isnull=True))
 
     def test_unsupported(self):
         with self.assertRaises(exceptions.FieldError):
@@ -139,7 +142,9 @@ class TestChecks(TestCase):
 
     def test_invalid_base_fields(self):
         class Related(models.Model):
-            field = encrypt(models.ForeignKey('fields.EncryptedIntegerModel', models.CASCADE))
+            field = encrypt(
+                models.ForeignKey('fields.EncryptedIntegerModel',
+                                  models.CASCADE))
 
             class Meta:
                 app_label = 'myapp'
@@ -195,20 +200,27 @@ class TestMigrations(TestCase):
         self.assertEqual('tests.fields.models.EncryptedFieldSubclass', path)
 
     @override_settings(MIGRATION_MODULES={
-        'fields': 'tests.fields.test_migrations_encrypted_default'})
+        'fields':
+        'tests.fields.test_migrations_encrypted_default'
+    })
     def test_adding_field_with_default(self):
         table_name = 'fields_integerencrypteddefaultmodel'
         with connection.cursor() as cursor:
-            self.assertNotIn(table_name, connection.introspection.table_names(cursor))
+            self.assertNotIn(table_name,
+                             connection.introspection.table_names(cursor))
         call_command('migrate', 'fields', verbosity=0)
         with connection.cursor() as cursor:
-            self.assertIn(table_name, connection.introspection.table_names(cursor))
+            self.assertIn(table_name,
+                          connection.introspection.table_names(cursor))
         call_command('migrate', 'fields', 'zero', verbosity=0)
         with connection.cursor() as cursor:
-            self.assertNotIn(table_name, connection.introspection.table_names(cursor))
+            self.assertNotIn(table_name,
+                             connection.introspection.table_names(cursor))
 
     @override_settings(MIGRATION_MODULES={
-        'fields': 'tests.fields.test_migrations_normal_to_encrypted'})
+        'fields':
+        'tests.fields.test_migrations_normal_to_encrypted'
+    })
     def test_makemigrations_no_changes(self):
         out = six.StringIO()
         call_command('makemigrations', '--dry-run', 'fields', stdout=out)
@@ -229,7 +241,8 @@ class TestSerialization(TestCase):
         self.assertEqual(json.loads(self.test_data_integer), json.loads(data))
 
     def test_integer_loading(self):
-        instance = list(serializers.deserialize('json', self.test_data_integer))[0].object
+        instance = list(
+            serializers.deserialize('json', self.test_data_integer))[0].object
         self.assertEqual(42, instance.field)
 
     def test_char_dumping(self):
@@ -238,7 +251,8 @@ class TestSerialization(TestCase):
         self.assertEqual(json.loads(self.test_data_char), json.loads(data))
 
     def test_char_loading(self):
-        instance = list(serializers.deserialize('json', self.test_data_char))[0].object
+        instance = list(serializers.deserialize('json',
+                                                self.test_data_char))[0].object
         self.assertEqual('Hello, world!', instance.field)
 
 
@@ -248,7 +262,8 @@ class TestValidation(TestCase):
         with self.assertRaises(exceptions.ValidationError) as cm:
             field.clean(None, None)
         self.assertEqual('null', cm.exception.code)
-        self.assertEqual('This field cannot be null.', cm.exception.messages[0])
+        self.assertEqual('This field cannot be null.',
+                         cm.exception.messages[0])
 
     def test_blank_true(self):
         field = encrypt(models.IntegerField(blank=True, null=True))
@@ -256,11 +271,13 @@ class TestValidation(TestCase):
         field.clean(None, None)
 
     def test_with_validators(self):
-        field = encrypt(models.IntegerField(validators=[validators.MinValueValidator(1)]))
+        field = encrypt(
+            models.IntegerField(validators=[validators.MinValueValidator(1)]))
         field.clean(1, None)
         with self.assertRaises(exceptions.ValidationError) as cm:
             field.clean(0, None)
-        self.assertEqual('Ensure this value is greater than or equal to 1.', cm.exception.messages[0])
+        self.assertEqual('Ensure this value is greater than or equal to 1.',
+                         cm.exception.messages[0])
 
 
 class TestFormField(TestCase):

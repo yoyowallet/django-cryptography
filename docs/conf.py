@@ -66,6 +66,7 @@ try:
 except ImportError:
     release = version
 else:
+
     def cryptography_release():
         pep440ver = get_version()
         if VERSION[3:5] == ('alpha', 0) and 'dev' not in pep440ver:
@@ -247,8 +248,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'django-cryptography.tex', 'django-cryptography Documentation',
-     'George Marshall', 'manual'),
+    (master_doc, 'django-cryptography.tex',
+     'django-cryptography Documentation', 'George Marshall', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -271,19 +272,15 @@ latex_documents = [
 # If false, no module index is generated.
 # latex_domain_indices = True
 
-
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'django-cryptography', 'django-cryptography Documentation',
-     [author], 1)
-]
+man_pages = [(master_doc, 'django-cryptography',
+              'django-cryptography Documentation', [author], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
-
 
 # -- Options for Texinfo output -------------------------------------------
 

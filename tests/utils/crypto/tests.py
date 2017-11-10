@@ -6,14 +6,17 @@ from cryptography.hazmat.primitives import hashes
 from django.conf import settings
 from django.test import override_settings
 from django.test.utils import freeze_time
-from django.utils.crypto import (
-    pbkdf2 as django_pbkdf2, salted_hmac as django_salted_hmac
-)
+from django.utils.crypto import (pbkdf2 as django_pbkdf2, salted_hmac as
+                                 django_salted_hmac)
 
 from django_cryptography.core import signing
 from django_cryptography.utils.crypto import (
-    Fernet, FernetBytes, InvalidToken,
-    constant_time_compare, pbkdf2, salted_hmac,
+    Fernet,
+    FernetBytes,
+    InvalidToken,
+    constant_time_compare,
+    pbkdf2,
+    salted_hmac,
 )
 
 
@@ -172,19 +175,20 @@ class TestUtilsCryptoPBKDF2(unittest.TestCase):
     def test_public_vectors(self):
         for vector in self.rfc_vectors:
             result = pbkdf2(**vector['args'])
-            self.assertEqual(binascii.hexlify(result).decode('ascii'),
-                             vector['result'])
+            self.assertEqual(
+                binascii.hexlify(result).decode('ascii'), vector['result'])
 
     def test_regression_vectors(self):
         for vector in self.regression_vectors:
             result = pbkdf2(**vector['args'])
-            self.assertEqual(binascii.hexlify(result).decode('ascii'),
-                             vector['result'])
+            self.assertEqual(
+                binascii.hexlify(result).decode('ascii'), vector['result'])
 
     def test_django_parity(self):
         for vector in self.rfc_vectors:
-            self.assertEqual(pbkdf2(**vector['args']),
-                             django_pbkdf2(**self.django_args(vector['args'])))
+            self.assertEqual(
+                pbkdf2(**vector['args']),
+                django_pbkdf2(**self.django_args(vector['args'])))
 
 
 class FernetBytesTestCase(unittest.TestCase):
@@ -201,8 +205,9 @@ class FernetBytesTestCase(unittest.TestCase):
                 'd60bc186286e701ba4fb4004')
         with freeze_time(123456789):
             fernet = FernetBytes()
-            self.assertEqual(fernet._encrypt_from_parts(value, iv),
-                             binascii.unhexlify(data))
+            self.assertEqual(
+                fernet._encrypt_from_parts(value, iv),
+                binascii.unhexlify(data))
             self.assertEqual(fernet.decrypt(binascii.unhexlify(data)), value)
 
     def test_decryptor_invalid_token(self):

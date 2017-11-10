@@ -15,7 +15,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='integerencrypteddefaultmodel',
             name='field_2',
-            field=django_cryptography.fields.encrypt(models.IntegerField(max_length=50, blank=True)),
+            field=django_cryptography.fields.encrypt(
+                models.IntegerField(max_length=50, blank=True)),
             preserve_default=False,
         ),
     ]

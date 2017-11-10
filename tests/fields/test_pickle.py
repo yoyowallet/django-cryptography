@@ -61,20 +61,17 @@ class TestQuerying(TestCase):
     def test_exact(self):
         self.assertSequenceEqual(
             NullablePickledModel.objects.filter(field__exact=[1]),
-            self.objs[:1]
-        )
+            self.objs[:1])
 
     def test_isnull(self):
         self.assertSequenceEqual(
             NullablePickledModel.objects.filter(field__isnull=True),
-            self.objs[-1:]
-        )
+            self.objs[-1:])
 
     def test_in(self):
         self.assertSequenceEqual(
             NullablePickledModel.objects.filter(field__in=[[1], [2]]),
-            self.objs[:2]
-        )
+            self.objs[:2])
 
     def test_unsupported(self):
         with self.assertRaises(exceptions.FieldError):
@@ -103,7 +100,8 @@ class TestSerialization(TestCase):
         self.assertEqual(json.loads(self.test_data), json.loads(data))
 
     def test_loading(self):
-        instance = list(serializers.deserialize('json', self.test_data))[0].object
+        instance = list(serializers.deserialize('json',
+                                                self.test_data))[0].object
         self.assertEqual([1, 2, None], instance.field)
 
 

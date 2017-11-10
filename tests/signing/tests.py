@@ -11,21 +11,19 @@ from django_cryptography.core import signing
 
 
 class TestSigner(SimpleTestCase):
-
     def test_signature(self):
         """signature() method should generate a signature"""
         signer = signing.Signer('predictable-secret')
         signer2 = signing.Signer('predictable-secret2')
         for s in (
-            b'hello',
-            b'3098247:529:087:',
-            '\u2019'.encode('utf-8'),
+                b'hello',
+                b'3098247:529:087:',
+                '\u2019'.encode('utf-8'),
         ):
             self.assertEqual(
                 signer.signature(s),
-                signing.base64_hmac(
-                    signer.salt + 'signer', s, 'predictable-secret').decode()
-            )
+                signing.base64_hmac(signer.salt + 'signer', s,
+                                    'predictable-secret').decode())
             self.assertNotEqual(signer.signature(s), signer2.signature(s))
 
     def test_signature_with_salt(self):
@@ -33,12 +31,13 @@ class TestSigner(SimpleTestCase):
         signer = signing.Signer('predictable-secret', salt='extra-salt')
         self.assertEqual(
             signer.signature('hello'),
-            signing.base64_hmac('extra-salt' + 'signer',
-                                'hello', 'predictable-secret').decode()
-        )
+            signing.base64_hmac('extra-salt' + 'signer', 'hello',
+                                'predictable-secret').decode())
         self.assertNotEqual(
-            signing.Signer('predictable-secret', salt='one').signature('hello'),
-            signing.Signer('predictable-secret', salt='two').signature('hello'))
+            signing.Signer('predictable-secret',
+                           salt='one').signature('hello'),
+            signing.Signer('predictable-secret',
+                           salt='two').signature('hello'))
 
     def test_sign_unsign(self):
         """sign/unsign should be reversible"""
@@ -79,7 +78,9 @@ class TestSigner(SimpleTestCase):
         objects = [
             ['a', 'list'],
             'a unicode string \u2019',
-            {'a': 'dictionary'},
+            {
+                'a': 'dictionary'
+            },
             'a compressible string' * 100,
         ]
         if six.PY2:
@@ -112,13 +113,16 @@ class TestSigner(SimpleTestCase):
         binary_key = b'\xe7'  # Set some binary (non-ASCII key)
 
         s = signing.Signer(binary_key)
-        self.assertEqual('foo:fc5zKyRI0Ktcf8db752abovGMa_u2CW9kPCaw5Znhag', s.sign('foo'))
+        self.assertEqual('foo:fc5zKyRI0Ktcf8db752abovGMa_u2CW9kPCaw5Znhag',
+                         s.sign('foo'))
 
     def test_valid_sep(self):
         separators = ['/', '*sep*', ',']
         for sep in separators:
             signer = signing.Signer('predictable-secret', sep=sep)
-            self.assertEqual('foo%sLQ8wXoKVFLoLwqvrZsOL9FWEwOy1XDzvduylmAZwNaI' % sep, signer.sign('foo'))
+            self.assertEqual(
+                'foo%sLQ8wXoKVFLoLwqvrZsOL9FWEwOy1XDzvduylmAZwNaI' % sep,
+                signer.sign('foo'))
 
     def test_invalid_sep(self):
         """should warn on invalid separator"""
@@ -130,40 +134,39 @@ class TestSigner(SimpleTestCase):
 
 
 class TestTimestampSigner(SimpleTestCase):
-
     def test_timestamp_signer(self):
         value = 'hello'
         with freeze_time(123456789):
             signer = signing.TimestampSigner('predictable-key')
             ts = signer.sign(value)
             self.assertNotEqual(ts,
-                signing.Signer('predictable-key').sign(value))
+                                signing.Signer('predictable-key').sign(value))
             self.assertEqual(signer.unsign(ts), value)
 
         with freeze_time(123456800):
             self.assertEqual(signer.unsign(ts, max_age=12), value)
             # max_age parameter can also accept a datetime.timedelta object
-            self.assertEqual(signer.unsign(ts, max_age=datetime.timedelta(seconds=11)), value)
+            self.assertEqual(
+                signer.unsign(ts, max_age=datetime.timedelta(seconds=11)),
+                value)
             with self.assertRaises(signing.SignatureExpired):
                 signer.unsign(ts, max_age=10)
 
 
 class TestBytesSigner(SimpleTestCase):
-
     def test_signature(self):
         """signature() method should generate a signature"""
         signer = signing.BytesSigner('predictable-secret')
         signer2 = signing.BytesSigner('predictable-secret2')
         for s in (
-            b'hello',
-            b'3098247:529:087:',
-            '\u2019'.encode('utf-8'),
+                b'hello',
+                b'3098247:529:087:',
+                '\u2019'.encode('utf-8'),
         ):
             self.assertEqual(
                 signer.signature(s),
                 signing.salted_hmac(signer.salt + 'signer', s,
-                    'predictable-secret').finalize()
-            )
+                                    'predictable-secret').finalize())
             self.assertNotEqual(signer.signature(s), signer2.signature(s))
 
     def test_signature_with_salt(self):
@@ -171,12 +174,13 @@ class TestBytesSigner(SimpleTestCase):
         signer = signing.BytesSigner('predictable-secret', salt='extra-salt')
         self.assertEqual(
             signer.signature('hello'),
-            signing.salted_hmac('extra-salt' + 'signer',
-                                'hello', 'predictable-secret').finalize()
-        )
+            signing.salted_hmac('extra-salt' + 'signer', 'hello',
+                                'predictable-secret').finalize())
         self.assertNotEqual(
-            signing.BytesSigner('predictable-secret', salt='one').signature('hello'),
-            signing.BytesSigner('predictable-secret', salt='two').signature('hello'))
+            signing.BytesSigner('predictable-secret',
+                                salt='one').signature('hello'),
+            signing.BytesSigner('predictable-secret',
+                                salt='two').signature('hello'))
 
     def test_sign_unsign(self):
         """sign/unsign should be reversible"""
@@ -216,7 +220,9 @@ class TestBytesSigner(SimpleTestCase):
         objects = [
             ['a', 'list'],
             'a unicode string \u2019',
-            {'a': 'dictionary'},
+            {
+                'a': 'dictionary'
+            },
         ]
         if six.PY2:
             objects.append(b'a byte string')
@@ -254,7 +260,6 @@ class TestBytesSigner(SimpleTestCase):
 
 
 class TestFernetSigner(SimpleTestCase):
-
     def test_fernet_signer(self):
         value = b'hello'
         with freeze_time(123456789):

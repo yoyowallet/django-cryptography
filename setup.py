@@ -24,35 +24,25 @@ class NonDataProperty(object):
 
 class DjangoTest(TestCommand):
     user_options = [
-        ('settings=', None,
-         'The Python path to a settings module, e.g. '
-         '"myproject.settings.main". If this isn\'t provided, the '
-         'DJANGO_SETTINGS_MODULE environment variable will be used.'),
-
+        ('settings=', None, "The Python path to a settings module, e.g. "
+         "\"myproject.settings.main\". If this isn't provided, the "
+         "DJANGO_SETTINGS_MODULE environment variable will be used."),
         ('noinput', None,
-         "Tells Django to NOT prompt the user for input of any kind."
-         "test."),
-        ('failfast', None,
-         "Tells Django to stop running the test suite after first failed "
-         "test."),
+         "Tells Django to NOT prompt the user for input of any kind."),
+        ('failfast', None, "Tells Django to stop running the test suite after "
+         "first failed test."),
         ('testrunner=', None,
-         "Tells Django to use specified test runner class instead of "
-         "the one specified by the TEST_RUNNER setting."),
-        ('liveserver=', None,
-         "Overrides the default address where the live server (used with "
-         "LiveServerTestCase) is expected to run from. The default value is "
-         "localhost:8081."),
-
-        ('top-level-directory=', 't',
-         "Top level of project for unittest discovery."),
-        ('pattern=', 'p',
-         "The test matching pattern. Defaults to test*.py."),
-        ('keepdb', 'k',
-         "Preserves the test DB between runs."),
-        ('reverse', 'r',
-         "Reverses test cases order."),
-        ('debug-sql', 'd',
-         "Prints logged SQL queries on failure."),
+         "Tells Django to use specified test runner class "
+         "instead of the one specified by the TEST_RUNNER setting."),
+        ('liveserver=', None, "Overrides the default address where the live "
+         "server (used with LiveServerTestCase) is expected to run from. The "
+         "default value is localhost:8081."),
+        ('top-level-directory=', 't', "Top level of project for unittest "
+         "discovery."),
+        ('pattern=', 'p', "The test matching pattern. Defaults to test*.py."),
+        ('keepdb', 'k', "Preserves the test DB between runs."),
+        ('reverse', 'r', "Reverses test cases order."),
+        ('debug-sql', 'd', "Prints logged SQL queries on failure."),
     ]
 
     def initialize_options(self):
@@ -129,11 +119,15 @@ class DjangoTest(TestCommand):
         TestRunner = get_runner(settings, self.testrunner)
 
         test_runner = TestRunner(
-            pattern=self.pattern, top_level=self.top_level_directory,
-            verbosity=self.verbose, interactive=(not self.noinput),
-            failfast=self.failfast, keepdb=self.keepdb, reverse=self.reverse,
-            debug_sql=self.debug_sql, output_dir=self.output_dir
-        )
+            pattern=self.pattern,
+            top_level=self.top_level_directory,
+            verbosity=self.verbose,
+            interactive=(not self.noinput),
+            failfast=self.failfast,
+            keepdb=self.keepdb,
+            reverse=self.reverse,
+            debug_sql=self.debug_sql,
+            output_dir=self.output_dir)
         failures = test_runner.run_tests(self.test_labels)
 
         sys.exit(bool(failures))

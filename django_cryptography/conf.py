@@ -32,6 +32,5 @@ class CryptographyConf(AppConf):
             backend=backend,
         )
         self.configured_data['KEY'] = kdf.derive(
-            force_bytes(self.configured_data['KEY'] or settings.SECRET_KEY)
-        )
+            force_bytes(self.configured_data['KEY'] or settings.SECRET_KEY))
         return self.configured_data

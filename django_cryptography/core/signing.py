@@ -11,10 +11,9 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.hmac import HMAC
 from django.conf import settings
-from django.core.signing import (
-    BadSignature, SignatureExpired, b64_encode, b64_decode,
-    get_cookie_signer, JSONSerializer
-)
+from django.core.signing import (BadSignature, JSONSerializer,
+                                 SignatureExpired, b64_decode, b64_encode,
+                                 get_cookie_signer)
 from django.utils import baseconv, six
 from django.utils.encoding import force_bytes, force_str, force_text
 
@@ -34,7 +33,11 @@ def base64_hmac(salt, value, key):
     return b64_encode(salted_hmac(salt, value, key).finalize())
 
 
-def dumps(obj, key=None, salt='django.core.signing', serializer=JSONSerializer, compress=False):
+def dumps(obj,
+          key=None,
+          salt='django.core.signing',
+          serializer=JSONSerializer,
+          compress=False):
     """
     Returns URL-safe, sha1 signed base64 compressed JSON string. If key is
     None, settings.SECRET_KEY is used instead.
@@ -67,7 +70,11 @@ def dumps(obj, key=None, salt='django.core.signing', serializer=JSONSerializer, 
     return TimestampSigner(key, salt=salt).sign(base64d)
 
 
-def loads(s, key=None, salt='django.core.signing', serializer=JSONSerializer, max_age=None):
+def loads(s,
+          key=None,
+          salt='django.core.signing',
+          serializer=JSONSerializer,
+          max_age=None):
     """
     Reverse of dumps(), raises BadSignature if signature fails.
 
@@ -75,7 +82,8 @@ def loads(s, key=None, salt='django.core.signing', serializer=JSONSerializer, ma
     """
     # TimestampSigner.unsign always returns unicode but base64 and zlib
     # compression operate on bytes.
-    base64d = force_bytes(TimestampSigner(key, salt=salt).unsign(s, max_age=max_age))
+    base64d = force_bytes(
+        TimestampSigner(key, salt=salt).unsign(s, max_age=max_age))
     decompress = False
     if base64d[:1] == b'.':
         # It's compressed; uncompress it first
@@ -95,10 +103,10 @@ class Signer(object):
         if _SEP_UNSAFE.match(self.sep):
             raise ValueError(
                 'Unsafe Signer separator: %r (cannot be empty or consist of '
-                'only A-z0-9-_=)' % sep,
-            )
-        self.salt = force_str(salt or
-                              '%s.%s' % (self.__class__.__module__, self.__class__.__name__))
+                'only A-z0-9-_=)' % sep, )
+        self.salt = force_str(
+            salt
+            or '%s.%s' % (self.__class__.__module__, self.__class__.__name__))
 
     def signature(self, value):
         signature = base64_hmac(self.salt + 'signer', value, self.key)
@@ -142,8 +150,8 @@ class TimestampSigner(Signer):
             # Check timestamp is not older than max_age
             age = time.time() - timestamp
             if age > max_age:
-                raise SignatureExpired(
-                    'Signature age %s > %s seconds' % (age, max_age))
+                raise SignatureExpired('Signature age %s > %s seconds' %
+                                       (age, max_age))
         return value
 
 
@@ -152,8 +160,9 @@ class BytesSigner(Signer):
         digest = settings.CRYPTOGRAPHY_DIGEST
         self._digest_size = digest.digest_size
         self.key = key or settings.SECRET_KEY
-        self.salt = force_str(salt or '%s.%s' % (
-            self.__class__.__module__, self.__class__.__name__))
+        self.salt = force_str(
+            salt
+            or '%s.%s' % (self.__class__.__module__, self.__class__.__name__))
 
     def signature(self, value):
         return salted_hmac(self.salt + 'signer', value, self.key).finalize()
@@ -167,8 +176,8 @@ class BytesSigner(Signer):
                       signed_value[-self._digest_size:])
         if constant_time_compare(sig, self.signature(value)):
             return value
-        raise BadSignature('Signature "%s" does not match' %
-                           binascii.b2a_base64(sig))
+        raise BadSignature(
+            'Signature "%s" does not match' % binascii.b2a_base64(sig))
 
 
 class FernetSigner(Signer):
@@ -222,11 +231,11 @@ class FernetSigner(Signer):
             # Check timestamp is not older than ttl
             age = abs(time.time() - timestamp)
             if age > ttl + _MAX_CLOCK_SKEW:
-                raise SignatureExpired(
-                    'Signature age %s > %s seconds' % (age, ttl))
+                raise SignatureExpired('Signature age %s > %s seconds' % (age,
+                                                                          ttl))
         try:
             self.signature(signed_value[:-d_size]).verify(sig)
         except InvalidSignature:
-            raise BadSignature('Signature "%s" does not match' %
-                               binascii.b2a_base64(sig))
+            raise BadSignature(
+                'Signature "%s" does not match' % binascii.b2a_base64(sig))
         return value
