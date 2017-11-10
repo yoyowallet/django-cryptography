@@ -4,6 +4,10 @@ Releases
 0.3 - master_
 -------------
 
+* Fixed issue with Django migration generation
+* Added initial support for Django 2.0
+* Dropped Python 3.3 support
+
 0.2 - 2016-12-06
 ----------------
 

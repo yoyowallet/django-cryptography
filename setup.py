@@ -2,13 +2,14 @@
 import logging
 import os
 import sys
+from importlib import import_module
 
 from setuptools import find_packages, setup
 from setuptools.command.test import test as TestCommand
 
-EXCLUDE_FROM_PACKAGES = ['tests']
+EXCLUDE_FROM_PACKAGES = ['docs', 'tests']
 
-version = __import__('django_cryptography').__version__
+version = import_module('django_cryptography').get_version()
 
 
 # adapted from jaraco.classes.properties:NonDataProperty
@@ -158,9 +159,7 @@ setup(
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Security :: Cryptography',
     ],
-    keywords='application',
     packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),
-    include_package_data=True,
     install_requires=[
         'django-appconf',
         'cryptography',
