@@ -1,8 +1,11 @@
 Releases
 ========
 
-0.3 - master_
+0.4 - master_
 -------------
+
+0.3 - 0.3.x_
+------------
 
 * Fixed issue with Django migration generation
 * Added initial support for Django 2.0
@@ -22,3 +25,4 @@ Releases
 .. _master: https://github.com/georgemarshall/django-cryptography
 .. _0.1.x: https://github.com/georgemarshall/django-cryptography/tree/stable/0.1.x
 .. _0.2.x: https://github.com/georgemarshall/django-cryptography/tree/stable/0.2.x
+.. _0.3.x: https://github.com/georgemarshall/django-cryptography/tree/stable/0.3.x
