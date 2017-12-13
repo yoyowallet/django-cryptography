@@ -8,6 +8,8 @@ matrix:
     - env: DJANGO="https://github.com/django/django/archive/master.tar.gz"
   exclude:
     - python: "2.7"
+      env: DJANGO="Django>=2.0,<2.1"
+    - python: "2.7"
       env: DJANGO="https://github.com/django/django/archive/master.tar.gz"
 python:
   - "2.7"
