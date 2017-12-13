@@ -17,8 +17,8 @@ python:
   - "nightly"
 env:
   - DJANGO="Django>=1.8,<1.9"
-  - DJANGO="Django>=1.10,<1.11"
   - DJANGO="Django>=1.11,<1.12"
+  - DJANGO="Django>=2.0,<2.1"
   - DJANGO="https://github.com/django/django/archive/master.tar.gz"
 before_install:
   - pip install --quiet codecov
