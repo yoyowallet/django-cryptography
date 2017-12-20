@@ -4,8 +4,8 @@ Releases
 0.4 - master_
 -------------
 
-0.3 - 0.3.x_
-------------
+0.3 - 2017-12-19
+----------------
 
 * Fixed issue with Django migration generation
 * Added initial support for Django 2.0
