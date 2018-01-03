@@ -8,12 +8,14 @@ Cryptography_ as the backend provider.
 
 Do not forget to read the documentation_.
 
+.. START HIDDEN
 .. image:: https://img.shields.io/travis/georgemarshall/django-cryptography/master.svg
    :target: https://travis-ci.org/georgemarshall/django-cryptography
    :alt: Builds
 .. image:: https://img.shields.io/codecov/c/github/georgemarshall/django-cryptography/master.svg
    :target: https://codecov.io/gh/georgemarshall/django-cryptography/branch/master
    :alt: Code coverage
+.. END HIDDEN
 
 Cryptography by example
 -----------------------

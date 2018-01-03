@@ -2,14 +2,32 @@
 import logging
 import os
 import sys
+from codecs import open
 from importlib import import_module
 
 from setuptools import find_packages, setup
 from setuptools.command.test import test as TestCommand
 
+if sys.version_info < (3, 0):
+    from StringIO import StringIO
+else:
+    from io import StringIO
+
+BASEDIR = os.path.abspath(os.path.dirname(__file__))
 EXCLUDE_FROM_PACKAGES = ['docs', 'tests']
 
+long_description = StringIO()
 version = import_module('django_cryptography').get_version()
+
+with open(os.path.join(BASEDIR, 'README.rst'), encoding='utf-8') as fp:
+    in_block = False
+    for line in fp.readlines():
+        if not in_block and line.startswith('.. START HIDDEN'):
+            in_block = True
+        elif in_block and line.startswith('.. END HIDDEN'):
+            in_block = False
+        elif not in_block:
+            long_description.write(line)
 
 
 # adapted from jaraco.classes.properties:NonDataProperty
@@ -138,6 +156,7 @@ setup(
     name='django-cryptography',
     version=version,
     description='Easily encrypt data in Django',
+    long_description=long_description.getvalue(),
     url='https://github.com/georgemarshall/django-cryptography',
     author='George Marshall',
     author_email='george@georgemarshall.name',
