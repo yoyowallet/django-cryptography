@@ -7,7 +7,7 @@ from django.conf import settings
 from django.core import exceptions, serializers, validators
 from django.core.management import call_command
 from django.db import IntegrityError, connection, models
-from django.test import TestCase, override_settings
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.test.utils import freeze_time
 from django.utils import six, timezone
 
@@ -155,7 +155,7 @@ class TestChecks(TestCase):
         self.assertEqual('encrypted.E002', errors[0].id)
 
 
-class TestMigrations(TestCase):
+class TestMigrations(TransactionTestCase):
     available_apps = ['tests.fields']
 
     def test_clone(self):
