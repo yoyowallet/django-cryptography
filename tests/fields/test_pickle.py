@@ -89,9 +89,6 @@ class TestMigrations(TestCase):
 
 class TestSerialization(TestCase):
     test_data = (
-        # Python 2.7
-        '[{"fields": {"field": "KGxwMQpJMQphSTIKYU5hLg=="}, "model": "fields.pickledmodel", "pk": null}]'
-    ) if pickle.HIGHEST_PROTOCOL < 3 else (
         # Python 3.4
         '[{"fields": {"field": "gANdcQAoSwFLAk5lLg=="}, "model": "fields.pickledmodel", "pk": null}]'
     ) if pickle.HIGHEST_PROTOCOL < 5 else (

@@ -1,7 +1,5 @@
 from unittest import TestCase
 
-from django.utils import six
-
 from django_cryptography import get_version
 from django_cryptography.utils.version import get_docs_version
 
@@ -12,7 +10,7 @@ class VersionTests(TestCase):
         # This will return a different result when it's run within or outside
         # of a git clone: 1.4.devYYYYMMDDHHMMSS or 1.4.
         ver_string = get_version(ver_tuple)
-        six.assertRegex(self, ver_string, r'1\.4(\.dev[0-9]+)?')
+        self.assertRegexpMatches(ver_string, r'1\.4(\.dev[0-9]+)?')
 
     def test_releases(self):
         tuples_to_strings = (

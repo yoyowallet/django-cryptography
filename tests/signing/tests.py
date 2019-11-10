@@ -4,7 +4,6 @@ import datetime
 
 from django.test import SimpleTestCase
 from django.test.utils import freeze_time
-from django.utils import six
 from django.utils.encoding import force_str
 
 from django_cryptography.core import signing
@@ -49,8 +48,6 @@ class TestSigner(SimpleTestCase):
             'jkw osanteuh ,rcuh nthu aou oauh ,ud du',
             '\u2019',
         ]
-        if six.PY2:
-            examples.append(b'a byte string')
         for example in examples:
             signed = signer.sign(example)
             self.assertIsInstance(signed, str)
@@ -83,8 +80,6 @@ class TestSigner(SimpleTestCase):
             },
             'a compressible string' * 100,
         ]
-        if six.PY2:
-            objects.append(b'a byte string')
         for o in objects:
             self.assertNotEqual(o, signing.dumps(o))
             self.assertEqual(o, signing.loads(signing.dumps(o)))
@@ -192,11 +187,9 @@ class TestBytesSigner(SimpleTestCase):
             b'jkw osanteuh ,rcuh nthu aou oauh ,ud du',
             b'\u2019',
         ]
-        if six.PY2:
-            examples.append(b'a byte string')
         for example in examples:
             signed = signer.sign(example)
-            self.assertIsInstance(signed, six.binary_type)
+            self.assertIsInstance(signed, bytes)
             self.assertNotEqual(force_str(example), signed)
             self.assertEqual(example, signer.unsign(signed))
 
@@ -224,8 +217,6 @@ class TestBytesSigner(SimpleTestCase):
                 'a': 'dictionary'
             },
         ]
-        if six.PY2:
-            objects.append(b'a byte string')
         for o in objects:
             self.assertNotEqual(o, signing.dumps(o))
             self.assertEqual(o, signing.loads(signing.dumps(o)))

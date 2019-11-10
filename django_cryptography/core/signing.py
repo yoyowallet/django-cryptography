@@ -14,7 +14,7 @@ from django.conf import settings
 from django.core.signing import (BadSignature, JSONSerializer,
                                  SignatureExpired, b64_decode, b64_encode,
                                  get_cookie_signer)
-from django.utils import baseconv, six
+from django.utils import baseconv
 from django.utils.encoding import force_bytes, force_str, force_text
 
 from ..utils.crypto import constant_time_compare, salted_hmac
@@ -181,7 +181,7 @@ class BytesSigner(Signer):
 
 
 class FernetSigner(Signer):
-    version = six.int2byte(0x80)
+    version = b'\x80'
 
     def __init__(self, key=None):
         """
