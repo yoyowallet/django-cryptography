@@ -1,5 +1,4 @@
 from base64 import b64decode, b64encode
-from importlib import import_module
 
 from django.core import checks
 from django.db import models
@@ -124,8 +123,7 @@ class EncryptedMixin(object):
 
     def check(self, **kwargs):
         errors = super(EncryptedMixin, self).check(**kwargs)
-        # Django 1.8 compatibility for `self.rel`
-        if getattr(self, 'remote_field', getattr(self, 'rel', None)):
+        if getattr(self, 'remote_field', None):
             errors.append(
                 checks.Error(
                     'Base field for encrypted cannot be a related field.',

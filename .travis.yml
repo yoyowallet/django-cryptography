@@ -5,6 +5,7 @@ cache: pip
 matrix:
   allow_failures:
     - python: nightly
+    - env: DJANGO="Django>=3.0b1,<3.1"
     - env: DJANGO="https://github.com/django/django/archive/master.tar.gz"
   exclude:
     - python: "2.7"
