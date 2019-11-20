@@ -31,7 +31,7 @@ with open(os.path.join(BASEDIR, 'README.rst'), encoding='utf-8') as fp:
 
 
 # adapted from jaraco.classes.properties:NonDataProperty
-class NonDataProperty(object):
+class NonDataProperty:
     def __init__(self, fget):
         self.fget = fget
 

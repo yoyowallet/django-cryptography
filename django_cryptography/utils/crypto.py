@@ -94,7 +94,7 @@ def pbkdf2(password, salt, iterations, dklen=0, digest=None):
     return kdf.derive(password)
 
 
-class FernetBytes(object):
+class FernetBytes:
     """
     This is a modified version of the Fernet encryption algorithm from
     the Python Cryptography library. The main change is the allowance

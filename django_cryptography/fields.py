@@ -81,7 +81,7 @@ class PickledField(models.Field):
         return value
 
 
-class EncryptedMixin(object):
+class EncryptedMixin:
     """
     A field mixin storing encrypted data
 
@@ -215,4 +215,4 @@ def encrypt(base_field, key=None, ttl=None):
 
     name, path, args, kwargs = base_field.deconstruct()
     kwargs.update({'key': key, 'ttl': ttl})
-    return get_encrypted_field(base_field.__class__)(*args, **kwargs)
+    return get_encrypted_field(type(base_field))(*args, **kwargs)

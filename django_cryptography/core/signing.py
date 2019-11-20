@@ -95,7 +95,7 @@ def loads(s,
     return serializer().loads(data)
 
 
-class Signer(object):
+class Signer:
     def __init__(self, key=None, sep=':', salt=None):
         # Use of native strings in all versions of Python
         self.key = key or settings.SECRET_KEY
