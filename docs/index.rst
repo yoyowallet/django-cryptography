@@ -10,7 +10,7 @@ Why another encryption library for Django?
 ------------------------------------------
 
 The motivation for making django-cryptography_ was from the
-general frustration of the existing solutions. Libraries such as
+general frustration of existing solutions. Libraries such as
 django-cryptographic-fields_ and django-crypto-fields_ do not allow
 a way to easily work with custom fields, being limited to their own
 provided subset. As well as many others lacking Python 3 and modern
@@ -23,6 +23,7 @@ Django support.
    installation
    settings
    fields
+   migrating
    examples
    releases
 
