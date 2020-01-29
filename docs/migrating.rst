@@ -1,10 +1,12 @@
 Migrating existing data
 =======================
 
-**If you are unfamiliar with migrations in Django, please consult**
-**the `Django Migrations`_ documentation.**
+.. seealso::
 
-To migrate an unencrypted database field to encrypted field the
+   If you are unfamiliar with migrations in Django, please consult
+   the `Django Migrations`_ documentation.
+
+To migrate an unencrypted database field to an encrypted field the
 following steps must be followed. Each step is labeled with its
 Django migration type of schema or data.
 
