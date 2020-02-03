@@ -4,6 +4,11 @@ Releases
 1.0 - master_
 -------------
 
+* Added support Django 3.0
+* Dropped Django 2.1 support
+* Dropped Python 2.7 support
+* Removed legacy support code
+
 0.4 - 2020-01-28
 ----------------
 
