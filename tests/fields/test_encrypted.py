@@ -1,6 +1,7 @@
 import decimal
 import json
 import uuid
+from io import StringIO
 
 from django import forms
 from django.conf import settings
@@ -9,7 +10,7 @@ from django.core.management import call_command
 from django.db import IntegrityError, connection, models
 from django.test import TestCase, TransactionTestCase, override_settings
 from django.test.utils import freeze_time
-from django.utils import six, timezone
+from django.utils import timezone
 
 from django_cryptography.fields import Expired, encrypt
 from .models import (
@@ -120,7 +121,7 @@ class TestChecks(TestCase):
     def test_settings_has_key(self):
         key = settings.CRYPTOGRAPHY_KEY
         self.assertIsNotNone(key)
-        self.assertIsInstance(key, six.binary_type)
+        self.assertIsInstance(key, bytes)
 
     def test_field_description(self):
         field = encrypt(models.IntegerField())
@@ -222,7 +223,7 @@ class TestMigrations(TransactionTestCase):
         'tests.fields.test_migrations_normal_to_encrypted'
     })
     def test_makemigrations_no_changes(self):
-        out = six.StringIO()
+        out = StringIO()
         call_command('makemigrations', '--dry-run', 'fields', stdout=out)
         self.assertIn("No changes detected in app 'fields'", out.getvalue())
 

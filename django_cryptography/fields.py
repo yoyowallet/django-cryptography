@@ -1,18 +1,13 @@
+import pickle
 from base64 import b64decode, b64encode
 
 from django.core import checks
 from django.db import models
-from django.utils import six
 from django.utils.encoding import force_bytes
 from django.utils.translation import ugettext_lazy as _
 
 from django_cryptography.core.signing import SignatureExpired
 from django_cryptography.utils.crypto import FernetBytes
-
-try:
-    from django.utils.six.moves import cPickle as pickle
-except ImportError:
-    import pickle
 
 FIELD_CACHE = {}
 
@@ -81,12 +76,12 @@ class PickledField(models.Field):
 
     def to_python(self, value):
         # If it's a string, it should be base64-encoded data
-        if isinstance(value, six.text_type):
+        if isinstance(value, str):
             return self._load(b64decode(force_bytes(value)))
         return value
 
 
-class EncryptedMixin(object):
+class EncryptedMixin:
     """
     A field mixin storing encrypted data
 
@@ -220,4 +215,4 @@ def encrypt(base_field, key=None, ttl=None):
 
     name, path, args, kwargs = base_field.deconstruct()
     kwargs.update({'key': key, 'ttl': ttl})
-    return get_encrypted_field(base_field.__class__)(*args, **kwargs)
+    return get_encrypted_field(type(base_field))(*args, **kwargs)
