@@ -1,4 +1,4 @@
-from django_cryptography.utils.version import get_version
+from django.utils.version import get_version
 
 VERSION = (1, 1, 0, 'alpha', 0)
 
