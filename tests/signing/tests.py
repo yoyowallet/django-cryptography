@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import datetime
 
 from django.test import SimpleTestCase
@@ -15,14 +13,16 @@ class TestSigner(SimpleTestCase):
         signer = signing.Signer('predictable-secret')
         signer2 = signing.Signer('predictable-secret2')
         for s in (
-                b'hello',
-                b'3098247:529:087:',
-                '\u2019'.encode('utf-8'),
+            b'hello',
+            b'3098247:529:087:',
+            '\u2019'.encode(),
         ):
             self.assertEqual(
                 signer.signature(s),
-                signing.base64_hmac(signer.salt + 'signer', s,
-                                    'predictable-secret').decode())
+                signing.base64_hmac(
+                    signer.salt + 'signer', s, 'predictable-secret'
+                ).decode(),
+            )
             self.assertNotEqual(signer.signature(s), signer2.signature(s))
 
     def test_signature_with_salt(self):
@@ -30,13 +30,14 @@ class TestSigner(SimpleTestCase):
         signer = signing.Signer('predictable-secret', salt='extra-salt')
         self.assertEqual(
             signer.signature('hello'),
-            signing.base64_hmac('extra-salt' + 'signer', 'hello',
-                                'predictable-secret').decode())
+            signing.base64_hmac(
+                'extra-salt' + 'signer', 'hello', 'predictable-secret'
+            ).decode(),
+        )
         self.assertNotEqual(
-            signing.Signer('predictable-secret',
-                           salt='one').signature('hello'),
-            signing.Signer('predictable-secret',
-                           salt='two').signature('hello'))
+            signing.Signer('predictable-secret', salt='one').signature('hello'),
+            signing.Signer('predictable-secret', salt='two').signature('hello'),
+        )
 
     def test_sign_unsign(self):
         """sign/unsign should be reversible"""
@@ -75,9 +76,7 @@ class TestSigner(SimpleTestCase):
         objects = [
             ['a', 'list'],
             'a unicode string \u2019',
-            {
-                'a': 'dictionary'
-            },
+            {'a': 'dictionary'},
             'a compressible string' * 100,
         ]
         for o in objects:
@@ -108,8 +107,9 @@ class TestSigner(SimpleTestCase):
         binary_key = b'\xe7'  # Set some binary (non-ASCII key)
 
         s = signing.Signer(binary_key)
-        self.assertEqual('foo:fc5zKyRI0Ktcf8db752abovGMa_u2CW9kPCaw5Znhag',
-                         s.sign('foo'))
+        self.assertEqual(
+            'foo:fc5zKyRI0Ktcf8db752abovGMa_u2CW9kPCaw5Znhag', s.sign('foo')
+        )
 
     def test_valid_sep(self):
         separators = ['/', '*sep*', ',']
@@ -117,11 +117,14 @@ class TestSigner(SimpleTestCase):
             signer = signing.Signer('predictable-secret', sep=sep)
             self.assertEqual(
                 'foo%sLQ8wXoKVFLoLwqvrZsOL9FWEwOy1XDzvduylmAZwNaI' % sep,
-                signer.sign('foo'))
+                signer.sign('foo'),
+            )
 
     def test_invalid_sep(self):
         """should warn on invalid separator"""
-        msg = 'Unsafe Signer separator: %r (cannot be empty or consist of only A-z0-9-_=)'
+        msg = (
+            'Unsafe Signer separator: %r (cannot be empty or consist of only A-z0-9-_=)'
+        )
         separators = ['', '-', 'abc']
         for sep in separators:
             with self.assertRaisesMessage(ValueError, msg % sep):
@@ -134,16 +137,15 @@ class TestTimestampSigner(SimpleTestCase):
         with freeze_time(123456789):
             signer = signing.TimestampSigner('predictable-key')
             ts = signer.sign(value)
-            self.assertNotEqual(ts,
-                                signing.Signer('predictable-key').sign(value))
+            self.assertNotEqual(ts, signing.Signer('predictable-key').sign(value))
             self.assertEqual(signer.unsign(ts), value)
 
         with freeze_time(123456800):
             self.assertEqual(signer.unsign(ts, max_age=12), value)
             # max_age parameter can also accept a datetime.timedelta object
             self.assertEqual(
-                signer.unsign(ts, max_age=datetime.timedelta(seconds=11)),
-                value)
+                signer.unsign(ts, max_age=datetime.timedelta(seconds=11)), value
+            )
             with self.assertRaises(signing.SignatureExpired):
                 signer.unsign(ts, max_age=10)
 
@@ -154,14 +156,16 @@ class TestBytesSigner(SimpleTestCase):
         signer = signing.BytesSigner('predictable-secret')
         signer2 = signing.BytesSigner('predictable-secret2')
         for s in (
-                b'hello',
-                b'3098247:529:087:',
-                '\u2019'.encode('utf-8'),
+            b'hello',
+            b'3098247:529:087:',
+            '\u2019'.encode(),
         ):
             self.assertEqual(
                 signer.signature(s),
-                signing.salted_hmac(signer.salt + 'signer', s,
-                                    'predictable-secret').finalize())
+                signing.salted_hmac(
+                    signer.salt + 'signer', s, 'predictable-secret'
+                ).finalize(),
+            )
             self.assertNotEqual(signer.signature(s), signer2.signature(s))
 
     def test_signature_with_salt(self):
@@ -169,13 +173,14 @@ class TestBytesSigner(SimpleTestCase):
         signer = signing.BytesSigner('predictable-secret', salt='extra-salt')
         self.assertEqual(
             signer.signature('hello'),
-            signing.salted_hmac('extra-salt' + 'signer', 'hello',
-                                'predictable-secret').finalize())
+            signing.salted_hmac(
+                'extra-salt' + 'signer', 'hello', 'predictable-secret'
+            ).finalize(),
+        )
         self.assertNotEqual(
-            signing.BytesSigner('predictable-secret',
-                                salt='one').signature('hello'),
-            signing.BytesSigner('predictable-secret',
-                                salt='two').signature('hello'))
+            signing.BytesSigner('predictable-secret', salt='one').signature('hello'),
+            signing.BytesSigner('predictable-secret', salt='two').signature('hello'),
+        )
 
     def test_sign_unsign(self):
         """sign/unsign should be reversible"""
@@ -185,7 +190,7 @@ class TestBytesSigner(SimpleTestCase):
             b'3098247529087',
             b'3098247:529:087:',
             b'jkw osanteuh ,rcuh nthu aou oauh ,ud du',
-            b'\u2019',
+            br'\u2019',
         ]
         for example in examples:
             signed = signer.sign(example)
@@ -213,9 +218,7 @@ class TestBytesSigner(SimpleTestCase):
         objects = [
             ['a', 'list'],
             'a unicode string \u2019',
-            {
-                'a': 'dictionary'
-            },
+            {'a': 'dictionary'},
         ]
         for o in objects:
             self.assertNotEqual(o, signing.dumps(o))
@@ -245,9 +248,12 @@ class TestBytesSigner(SimpleTestCase):
         binary_key = b'\xe7'  # Set some binary (non-ASCII key)
 
         s = signing.BytesSigner(binary_key)
-        self.assertEqual(b'foo\xb5\x8a\xc47\x19\xaeN\xdcMT\x83{PAb\r'
-                         b'B\xf3\xd2i\xd1P\x94\xeb^\xc7(\xb4\xd3\x92'
-                         b'\xd3\xf4', s.sign('foo'))
+        self.assertEqual(
+            b'foo\xb5\x8a\xc47\x19\xaeN\xdcMT\x83{PAb\r'
+            b'B\xf3\xd2i\xd1P\x94\xeb^\xc7(\xb4\xd3\x92'
+            b'\xd3\xf4',
+            s.sign('foo'),
+        )
 
 
 class TestFernetSigner(SimpleTestCase):
@@ -262,7 +268,8 @@ class TestFernetSigner(SimpleTestCase):
             self.assertEqual(signer.unsign(ts, ttl=12), value)
             # max_age parameter can also accept a datetime.timedelta object
             self.assertEqual(
-                signer.unsign(ts, ttl=datetime.timedelta(seconds=11)), value)
+                signer.unsign(ts, ttl=datetime.timedelta(seconds=11)), value
+            )
             with self.assertRaises(signing.SignatureExpired):
                 signer.unsign(ts, ttl=10)
 
