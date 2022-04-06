@@ -4,10 +4,15 @@ Releases
 1.1 - master_
 -------------
 
+* Added Django 4.0 support
+* Dropped Python 3.5 support
+* Dropped Django 1.11 support
+* Dropped Django 3.1 support
+
 1.0 - 2020-02-09
 ----------------
 
-* Added support Django 3.0
+* Added Django 3.0 support
 * Dropped Django 2.1 support
 * Dropped Python 2.7 support
 * Removed legacy support code
