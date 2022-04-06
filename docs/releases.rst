@@ -4,6 +4,8 @@ Releases
 2.0 - master_
 -------------
 
+* Dropped Python 3.6 support
+
 1.1 - 2022-04-05
 ----------------
 

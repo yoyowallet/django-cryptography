@@ -42,7 +42,7 @@ bi-directional data retrieval.
 Requirements
 ------------
 
-* Python_ (3.6, 3.7, 3.8, 3.9, 3.10)
+* Python_ (3.7, 3.8, 3.9, 3.10)
 * Cryptography_ (2.0+)
 * Django_ (2.2, 3.2, 4.0)
 
