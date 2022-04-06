@@ -1,8 +1,8 @@
 Releases
 ========
 
-1.1 - master_
--------------
+1.1 - 2022-04-05
+----------------
 
 * Added Django 4.0 support
 * Dropped Python 3.5 support
@@ -49,3 +49,4 @@ Releases
 .. _0.3.x: https://github.com/georgemarshall/django-cryptography/tree/stable/0.3.x
 .. _0.4.x: https://github.com/georgemarshall/django-cryptography/tree/stable/0.4.x
 .. _1.0.x: https://github.com/georgemarshall/django-cryptography/tree/stable/1.0.x
+.. _1.1.x: https://github.com/georgemarshall/django-cryptography/tree/stable/1.1.x
