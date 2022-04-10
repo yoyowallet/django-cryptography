@@ -1,6 +1,6 @@
 [build-system]
 requires = ['Django', 'setuptools>=40.8.0', 'wheel']
-build-backend = "setuptools.build_meta"
+build-backend = 'setuptools.build_meta'
 
 [tool.black]
 target-version = ['py37']
@@ -20,8 +20,18 @@ exclude_lines = [
 ignore_errors = true
 omit = ['docs/*', 'tests/*']
 
+[tool.django-stubs]
+django_settings_module = 'tests.settings'
+
 [tool.isort]
 profile = 'black'
+
+[tool.mypy]
+plugins = ['mypy_django_plugin.main']
+
+[[tool.mypy.overrides]]
+module = ['appconf']
+ignore_missing_imports = true
 
 [tool.tox]
 # language=ini
