@@ -7,6 +7,10 @@ class PickledModel(models.Model):
     field = PickledField()
 
 
+class DefaultPickledModel(models.Model):
+    field = PickledField(default=b"")
+
+
 class NullablePickledModel(models.Model):
     field = PickledField(blank=True, null=True)
 
@@ -40,5 +44,6 @@ class OtherEncryptedTypesModel(models.Model):
     decimal = encrypt(models.DecimalField(max_digits=5, decimal_places=2))
 
 
-class EncryptedFieldSubclass(encrypt(models.IntegerField)):
+@encrypt
+class EncryptedFieldSubclass(models.IntegerField):
     pass

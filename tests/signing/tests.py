@@ -1,83 +1,134 @@
 import datetime
+import time
 
 from django.test import SimpleTestCase
 from django.test.utils import freeze_time
-from django.utils.encoding import force_str
 
 from django_cryptography.core import signing
+from django_cryptography.utils.crypto import InvalidAlgorithm
 
 
 class TestSigner(SimpleTestCase):
     def test_signature(self):
         """signature() method should generate a signature"""
-        signer = signing.Signer('predictable-secret')
-        signer2 = signing.Signer('predictable-secret2')
+        signer = signing.Signer("predictable-secret")
+        signer2 = signing.Signer("predictable-secret2")
         for s in (
-            b'hello',
-            b'3098247:529:087:',
-            '\u2019'.encode(),
+            b"hello",
+            b"3098247:529:087:",
+            "\u2019".encode(),
         ):
             self.assertEqual(
                 signer.signature(s),
                 signing.base64_hmac(
-                    signer.salt + 'signer', s, 'predictable-secret'
-                ).decode(),
+                    signer.salt + "signer",
+                    s,
+                    "predictable-secret",
+                    algorithm=signer.algorithm,
+                ),
             )
             self.assertNotEqual(signer.signature(s), signer2.signature(s))
 
     def test_signature_with_salt(self):
         """signature(value, salt=...) should work"""
-        signer = signing.Signer('predictable-secret', salt='extra-salt')
+        signer = signing.Signer("predictable-secret", salt="extra-salt")
         self.assertEqual(
-            signer.signature('hello'),
+            signer.signature("hello"),
             signing.base64_hmac(
-                'extra-salt' + 'signer', 'hello', 'predictable-secret'
-            ).decode(),
+                "extra-salt" + "signer",
+                "hello",
+                "predictable-secret",
+                algorithm=signer.algorithm,
+            ),
         )
         self.assertNotEqual(
-            signing.Signer('predictable-secret', salt='one').signature('hello'),
-            signing.Signer('predictable-secret', salt='two').signature('hello'),
+            signing.Signer("predictable-secret", salt="one").signature("hello"),
+            signing.Signer("predictable-secret", salt="two").signature("hello"),
         )
+
+    def test_custom_algorithm(self):
+        signer = signing.Signer("predictable-secret", algorithm="sha512")
+        self.assertEqual(
+            signer.signature("hello"),
+            "39g7myx24wdsEj07XSFiTNoGIzdolUgcHk-ynx3nGA8HP-y01_2HLRJIqhNIlkvfb"
+            "2wKijVMry1wHKIo66TSTw",
+        )
+
+    def test_invalid_algorithm(self):
+        signer = signing.Signer("predictable-secret", algorithm="whatever")
+        msg = "'whatever' is not an algorithm accepted by the cryptography module."
+        with self.assertRaisesMessage(InvalidAlgorithm, msg):
+            signer.sign("hello")
 
     def test_sign_unsign(self):
         """sign/unsign should be reversible"""
-        signer = signing.Signer('predictable-secret')
+        signer = signing.Signer("predictable-secret")
         examples = [
-            'q;wjmbk;wkmb',
-            '3098247529087',
-            '3098247:529:087:',
-            'jkw osanteuh ,rcuh nthu aou oauh ,ud du',
-            '\u2019',
+            "q;wjmbk;wkmb",
+            "3098247529087",
+            "3098247:529:087:",
+            "jkw osanteuh ,rcuh nthu aou oauh ,ud du",
+            "\u2019",
         ]
         for example in examples:
             signed = signer.sign(example)
             self.assertIsInstance(signed, str)
-            self.assertNotEqual(force_str(example), signed)
+            self.assertNotEqual(example, signed)
             self.assertEqual(example, signer.unsign(signed))
+
+    def test_sign_unsign_non_string(self):
+        signer = signing.Signer("predictable-secret")
+        values = [
+            123,
+            1.23,
+            True,
+            datetime.date.today(),
+        ]
+        for value in values:
+            with self.subTest(value):
+                signed = signer.sign(value)
+                self.assertIsInstance(signed, str)
+                self.assertNotEqual(signed, value)
+                self.assertEqual(signer.unsign(signed), str(value))
 
     def test_unsign_detects_tampering(self):
         """unsign should raise an exception if the value has been tampered with"""
-        signer = signing.Signer('predictable-secret')
-        value = 'Another string'
+        signer = signing.Signer("predictable-secret")
+        value = "Another string"
         signed_value = signer.sign(value)
         transforms = (
             lambda s: s.upper(),
-            lambda s: s + 'a',
-            lambda s: 'a' + s[1:],
-            lambda s: s.replace(':', ''),
+            lambda s: s + "a",
+            lambda s: "a" + s[1:],
+            lambda s: s.replace(":", ""),
         )
         self.assertEqual(value, signer.unsign(signed_value))
         for transform in transforms:
             with self.assertRaises(signing.BadSignature):
                 signer.unsign(transform(signed_value))
 
+    def test_sign_unsign_object(self):
+        signer = signing.Signer("predictable-secret")
+        tests = [
+            ["a", "list"],
+            "a string \u2019",
+            {"a": "dictionary"},
+        ]
+        for obj in tests:
+            with self.subTest(obj=obj):
+                signed_obj = signer.sign_object(obj)
+                self.assertNotEqual(obj, signed_obj)
+                self.assertEqual(obj, signer.unsign_object(signed_obj))
+                signed_obj = signer.sign_object(obj, compress=True)
+                self.assertNotEqual(obj, signed_obj)
+                self.assertEqual(obj, signer.unsign_object(signed_obj))
+
     def test_dumps_loads(self):
         """dumps and loads be reversible for any JSON serializable object"""
         objects = [
-            ['a', 'list'],
-            'a unicode string \u2019',
-            {'a': 'dictionary'},
-            'a compressible string' * 100,
+            ["a", "list"],
+            "a string \u2019",
+            {"a": "dictionary"},
         ]
         for o in objects:
             self.assertNotEqual(o, signing.dumps(o))
@@ -89,13 +140,13 @@ class TestSigner(SimpleTestCase):
         """loads should raise exception for tampered objects"""
         transforms = (
             lambda s: s.upper(),
-            lambda s: s + 'a',
-            lambda s: 'a' + s[1:],
-            lambda s: s.replace(':', ''),
+            lambda s: s + "a",
+            lambda s: "a" + s[1:],
+            lambda s: s.replace(":", ""),
         )
         value = {
-            'foo': 'bar',
-            'baz': 1,
+            "foo": "bar",
+            "baz": 1,
         }
         encoded = signing.dumps(value)
         self.assertEqual(value, signing.loads(encoded))
@@ -104,28 +155,29 @@ class TestSigner(SimpleTestCase):
                 signing.loads(transform(encoded))
 
     def test_works_with_non_ascii_keys(self):
-        binary_key = b'\xe7'  # Set some binary (non-ASCII key)
+        binary_key = b"\xe7"  # Set some binary (non-ASCII key)
 
         s = signing.Signer(binary_key)
         self.assertEqual(
-            'foo:fc5zKyRI0Ktcf8db752abovGMa_u2CW9kPCaw5Znhag', s.sign('foo')
+            "foo:fc5zKyRI0Ktcf8db752abovGMa_u2CW9kPCaw5Znhag",
+            s.sign("foo"),
         )
 
     def test_valid_sep(self):
-        separators = ['/', '*sep*', ',']
+        separators = ["/", "*sep*", ","]
         for sep in separators:
-            signer = signing.Signer('predictable-secret', sep=sep)
+            signer = signing.Signer("predictable-secret", sep=sep)
             self.assertEqual(
-                'foo%sLQ8wXoKVFLoLwqvrZsOL9FWEwOy1XDzvduylmAZwNaI' % sep,
-                signer.sign('foo'),
+                "foo%sLQ8wXoKVFLoLwqvrZsOL9FWEwOy1XDzvduylmAZwNaI" % sep,
+                signer.sign("foo"),
             )
 
     def test_invalid_sep(self):
         """should warn on invalid separator"""
         msg = (
-            'Unsafe Signer separator: %r (cannot be empty or consist of only A-z0-9-_=)'
+            "Unsafe Signer separator: %r (cannot be empty or consist of only A-z0-9-_=)"
         )
-        separators = ['', '-', 'abc']
+        separators = ["", "-", "abc"]
         for sep in separators:
             with self.assertRaisesMessage(ValueError, msg % sep):
                 signing.Signer(sep=sep)
@@ -163,7 +215,7 @@ class TestBytesSigner(SimpleTestCase):
             self.assertEqual(
                 signer.signature(s),
                 signing.salted_hmac(
-                    signer.salt + 'signer', s, 'predictable-secret'
+                    signer.salt + 'signer', s, 'predictable-secret', algorithm='sha256'
                 ).finalize(),
             )
             self.assertNotEqual(signer.signature(s), signer2.signature(s))
@@ -174,7 +226,10 @@ class TestBytesSigner(SimpleTestCase):
         self.assertEqual(
             signer.signature('hello'),
             signing.salted_hmac(
-                'extra-salt' + 'signer', 'hello', 'predictable-secret'
+                'extra-salt' + 'signer',
+                'hello',
+                'predictable-secret',
+                algorithm='sha256',
             ).finalize(),
         )
         self.assertNotEqual(
@@ -195,7 +250,7 @@ class TestBytesSigner(SimpleTestCase):
         for example in examples:
             signed = signer.sign(example)
             self.assertIsInstance(signed, bytes)
-            self.assertNotEqual(force_str(example), signed)
+            self.assertNotEqual(example, signed)
             self.assertEqual(example, signer.unsign(signed))
 
     def test_unsign_detects_tampering(self):
@@ -261,25 +316,25 @@ class TestFernetSigner(SimpleTestCase):
         value = b'hello'
         with freeze_time(123456789):
             signer = signing.FernetSigner('predictable-key')
-            ts = signer.sign(value)
+            ts = signer.sign(value, int(time.time()))
             self.assertEqual(signer.unsign(ts), value)
 
         with freeze_time(123456800 + signing._MAX_CLOCK_SKEW):
-            self.assertEqual(signer.unsign(ts, ttl=12), value)
+            self.assertEqual(signer.unsign(ts, max_age=12), value)
             # max_age parameter can also accept a datetime.timedelta object
             self.assertEqual(
-                signer.unsign(ts, ttl=datetime.timedelta(seconds=11)), value
+                signer.unsign(ts, max_age=datetime.timedelta(seconds=11)), value
             )
             with self.assertRaises(signing.SignatureExpired):
-                signer.unsign(ts, ttl=10)
+                signer.unsign(ts, max_age=10)
 
         with freeze_time(123456778 - signing._MAX_CLOCK_SKEW):
             with self.assertRaises(signing.SignatureExpired):
-                signer.unsign(ts, ttl=10)
+                signer.unsign(ts, max_age=10)
 
     def test_bad_payload(self):
         signer = signing.FernetSigner('predictable-key')
-        value = signer.sign('hello')
+        value = signer.sign('hello', int(time.time()))
 
         with self.assertRaises(signing.BadSignature):
             # Break the version
