@@ -79,7 +79,7 @@ class TestUtilsCryptoMisc(SimpleTestCase):
 
 class TestUtilsCryptoPBKDF2(unittest.TestCase):
     # https://tools.ietf.org/html/draft-josefsson-pbkdf2-test-vectors-06
-    rfc_vectors = [
+    rfc_vectors = (
         {
             "args": {
                 "password": "password",
@@ -141,9 +141,9 @@ class TestUtilsCryptoPBKDF2(unittest.TestCase):
             },
             "result": "56fa6aa75548099dcc37d7f03425e0c3",
         },
-    ]
+    )
 
-    regression_vectors = [
+    regression_vectors = (
         {
             "args": {
                 "password": "password",
@@ -201,7 +201,7 @@ class TestUtilsCryptoPBKDF2(unittest.TestCase):
             },
             "result": "120fb6cffcf8b32c43e7225256c4f837a86548c9",
         },
-    ]
+    )
 
     def test_public_vectors(self):
         for vector in self.rfc_vectors:

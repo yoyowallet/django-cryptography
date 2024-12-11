@@ -4,11 +4,9 @@ import django_cryptography.fields
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("fields", "0002_rename_fields"),
-    ]
+    dependencies = (("fields", "0002_rename_fields"),)
 
-    operations = [
+    operations = (
         migrations.AddField(
             model_name="encryptedcharmodel",
             name="field",
@@ -89,4 +87,4 @@ class Migration(migrations.Migration):
             field=django_cryptography.fields.encrypt(models.UUIDField(default=None)),
             preserve_default=False,
         ),
-    ]
+    )

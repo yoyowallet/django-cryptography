@@ -1,5 +1,4 @@
 import json
-import pickle
 
 from django.core import exceptions, serializers
 from django.db import IntegrityError
@@ -96,17 +95,8 @@ class TestMigrations(TestCase):
 
 class TestSerialization(TestCase):
     test_data = (
-        (
-            # Python 3.4
-            '[{"fields": {"field": "gANdcQAoSwFLAk5lLg=="}, '
-            '"model": "fields.pickledmodel", "pk": null}]'
-        )
-        if pickle.HIGHEST_PROTOCOL < 5
-        else (
-            # Python 3.8
-            '[{"fields": {"field": "gASVCgAAAAAAAABdlChLAUsCTmUu"}, '
-            '"model": "fields.pickledmodel", "pk": null}]'
-        )
+        '[{"fields": {"field": "gASVCgAAAAAAAABdlChLAUsCTmUu"}, '
+        '"model": "fields.pickledmodel", "pk": null}]'
     )
 
     def test_dumping(self):
@@ -115,7 +105,7 @@ class TestSerialization(TestCase):
         self.assertEqual(json.loads(self.test_data), json.loads(data))
 
     def test_loading(self):
-        instance = list(serializers.deserialize("json", self.test_data))[0].object
+        instance = next(serializers.deserialize("json", self.test_data)).object
         self.assertEqual([1, 2, None], instance.field)
 
 

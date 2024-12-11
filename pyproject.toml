@@ -1,9 +1,57 @@
-[build-system]
-requires = ['Django', 'setuptools>=40.8.0', 'wheel']
-build-backend = 'setuptools.build_meta'
+[tool.poetry]
+name = "django-cryptography"
+version = "0.1.0" # Replace with the actual version
+description = "Easily encrypt data in Django"
+authors = ["George Marshall <george@georgemarshall.name>"]
+license = "BSD-3-Clause"
+readme = "README.rst"
+homepage = "https://github.com/georgemarshall/django-cryptography"
+repository = "https://github.com/georgemarshall/django-cryptography"
+documentation = "https://django-cryptography.readthedocs.io"
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Web Environment",
+    "Framework :: Django",
+    "Framework :: Django :: 3.2",
+    "Framework :: Django :: 4.0",
+    "Framework :: Django :: 4.1",
+    "Framework :: Django :: 4.2",
+    "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Security :: Cryptography",
+]
 
-[tool.black]
-target-version = ['py37']
+[tool.poetry.dependencies]
+python = ">=3.9"
+Django = ">=3.2"
+cryptography = ">=43.0.3"
+django-appconf = "*"
+typing-extensions = ">=3.7.4.3"
+
+[tool.poetry.extras]
+mypy = ["django-stubs", "mypy"]
+
+[tool.poetry.group.dev.dependencies]
+coverage = { extras = ["toml"], version = "*" }
+django-stubs = "*"
+mypy = "*"
+tox = "^4.23.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.coverage.run]
 branch = true
@@ -22,9 +70,6 @@ omit = ['docs/*', 'tests/*']
 [tool.django-stubs]
 django_settings_module = 'tests.settings'
 
-[tool.isort]
-profile = 'black'
-
 [tool.mypy]
 plugins = ['mypy_django_plugin.main']
 
@@ -33,7 +78,7 @@ module = ['appconf']
 ignore_missing_imports = true
 
 [tool.ruff]
-select = [
+lint.select = [
     "A", # flake8-builtins
     "B", # flake8-bugbear
     "C4", # flake8-comprehensions
@@ -49,9 +94,9 @@ select = [
 
 ]
 exclude = ["docs"]
-target-version = "py37"
+target-version = "py39"
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/*" = ["ERA"]
 
 [tool.tox]
@@ -60,10 +105,12 @@ legacy_tox_ini = """
 [tox]
 min_version = 4.0
 envlist =
-    {py37,py38,py39,py310}-django32,
-    {py38,py39,py310}-django41,
-    {py38,py39,py310,py311}-django42,
-    {py310,py311}-djangomain,
+    {py39,py310,py311,py312}-django32,
+    {py39,py310,py311,py312}-django41,
+    {py39,py310,py311,py312,py313}-django42,
+    {py310,py311,py312,py313}-django50,
+    {py310,py311,py312,py313}-django51,
+    {py310,py311,py312,py313}-djangomain,
 isolated_build = True
 
 [testenv]
@@ -72,6 +119,8 @@ deps =
     django32: Django>=3.2,<3.3
     django41: Django>=4.1,<4.2
     django42: Django>=4.2,<4.3
+    django50: Django>=5.0,<5.1
+    django51: Django>=5.1,<5.2
     djangomain: https://github.com/django/django/archive/main.tar.gz
 commands =
     {envpython} -m coverage run --context='{envname}' runtests.py {posargs}

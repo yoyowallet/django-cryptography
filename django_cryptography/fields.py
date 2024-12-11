@@ -1,13 +1,9 @@
 import pickle
 from base64 import b64decode, b64encode
+from collections.abc import Sequence
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Sequence,
-    Tuple,
-    Type,
     TypeVar,
     Union,
     cast,
@@ -27,7 +23,7 @@ from django_cryptography.typing import DatabaseWrapper
 from django_cryptography.utils.crypto import FernetBytes
 
 F = TypeVar("F", bound=models.Field)
-FIELD_CACHE: Dict[type, type] = {}
+FIELD_CACHE: dict[type, type] = {}
 
 Expired = object()
 """Represents an expired encryption value."""
@@ -39,7 +35,7 @@ class PickledField(models.BinaryField):
     """
 
     description = _("Pickled data")
-    empty_values = [None, b""]
+    empty_values = (None, b"")
     supported_lookups = ("exact", "in", "isnull")
 
     def _dump(self, value: Any) -> bytes:
@@ -48,12 +44,12 @@ class PickledField(models.BinaryField):
     def _load(self, value: bytes) -> Any:
         return pickle.loads(value)
 
-    def get_lookup(self, lookup_name: str) -> Optional[Type[Lookup]]:
+    def get_lookup(self, lookup_name: str) -> Optional[type[Lookup]]:
         if lookup_name not in self.supported_lookups:
             return None
         return super().get_lookup(lookup_name)
 
-    def get_transform(self, lookup_name: str) -> Optional[Type[Transform]]:
+    def get_transform(self, lookup_name: str) -> Optional[type[Transform]]:
         if lookup_name not in self.supported_lookups:
             return None
         return super().get_transform(lookup_name)
@@ -98,7 +94,7 @@ class EncryptedMixin(models.Field):
     supported_lookups = ("isnull",)
 
     def __init__(self, *args, **kwargs) -> None:
-        self.base_class: Type[models.Field]
+        self.base_class: type[models.Field]
         self.wasinstance: bool
 
         self.key: Union[bytes, str] = kwargs.pop("key", None)
@@ -121,7 +117,7 @@ class EncryptedMixin(models.Field):
         except SignatureExpired:
             return Expired
 
-    def check(self, **kwargs: Any) -> List[CheckMessage]:
+    def check(self, **kwargs: Any) -> list[CheckMessage]:
         errors = super().check(**kwargs)
         if getattr(self, "remote_field", None):
             errors.append(
@@ -141,7 +137,7 @@ class EncryptedMixin(models.Field):
             return encrypt(self.base_class(*args, **kwargs), self.key, self.ttl)
         return self.__class__(*args, **kwargs)
 
-    def deconstruct(self) -> Tuple[str, str, Sequence[Any], Dict[str, Any]]:
+    def deconstruct(self) -> tuple[str, str, Sequence[Any], dict[str, Any]]:
         name, path, args, kwargs = super().deconstruct()
         if self.wasinstance is False:
             path = f"{self.base_class.__module__}.{self.base_class.__name__}"
@@ -183,7 +179,7 @@ class EncryptedMixin(models.Field):
         return value
 
 
-def get_encrypted_field(base_class: Type[F], wasinstance: bool) -> Type[F]:
+def get_encrypted_field(base_class: type[F], wasinstance: bool) -> type[F]:
     """
     A get or create method for encrypted fields, we cache the field in
     the module to avoid recreation. This also allows us to always return
@@ -201,13 +197,11 @@ def get_encrypted_field(base_class: Type[F], wasinstance: bool) -> Type[F]:
 
 
 @overload
-def encrypt(base_field: F, key=None, ttl=None) -> F:
-    ...
+def encrypt(base_field: F, key=None, ttl=None) -> F: ...
 
 
 @overload
-def encrypt(base_field: Type[F]) -> Type[F]:
-    ...
+def encrypt(base_field: type[F]) -> type[F]: ...
 
 
 def encrypt(

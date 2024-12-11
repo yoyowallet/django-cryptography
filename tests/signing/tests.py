@@ -168,7 +168,7 @@ class TestSigner(SimpleTestCase):
         for sep in separators:
             signer = signing.Signer("predictable-secret", sep=sep)
             self.assertEqual(
-                "foo%sLQ8wXoKVFLoLwqvrZsOL9FWEwOy1XDzvduylmAZwNaI" % sep,
+                f"foo{sep}LQ8wXoKVFLoLwqvrZsOL9FWEwOy1XDzvduylmAZwNaI",
                 signer.sign("foo"),
             )
 

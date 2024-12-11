@@ -2,7 +2,7 @@ import base64
 import os
 import time
 from binascii import Error
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
 from cryptography.hazmat.primitives import constant_time, hashes, padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -28,7 +28,7 @@ class InvalidToken(Exception):
     pass
 
 
-HASHES: Dict[Algorithm, hashes.HashAlgorithm] = {
+HASHES: dict[Algorithm, hashes.HashAlgorithm] = {
     "blake2b": hashes.BLAKE2b(64),
     "blake2s": hashes.BLAKE2s(32),
     "md5": hashes.MD5(),
@@ -70,12 +70,12 @@ def salted_hmac(
         hasher = HASHES[algorithm]
     except KeyError as e:
         raise InvalidAlgorithm(
-            "%r is not an algorithm accepted by the cryptography module." % algorithm
+            f"{algorithm!r} is not an algorithm accepted by the cryptography module."
         ) from e
 
     # We need to generate a derived key from our base key.  We can do this by
     # passing the key_salt and our base key through a pseudo-random function.
-    digest = hashes.Hash(hasher, backend=settings.CRYPTOGRAPHY_BACKEND)
+    digest = hashes.Hash(hasher)
     digest.update(key_salt + secret)
     key = digest.finalize()
 
@@ -83,7 +83,7 @@ def salted_hmac(
     # line is redundant and could be replaced by key = key_salt + secret, since
     # the hmac module does the same thing for keys longer than the block size.
     # However, we need to ensure that we *always* do this.
-    h = HMAC(key, hasher, backend=settings.CRYPTOGRAPHY_BACKEND)
+    h = HMAC(key, hasher)
     h.update(force_bytes(value))
     return h
 
@@ -112,9 +112,7 @@ def pbkdf2(
     dklen = dklen or digest.digest_size
     password = force_bytes(password)
     salt = force_bytes(salt)
-    kdf = PBKDF2HMAC(
-        digest, dklen, salt, iterations, backend=settings.CRYPTOGRAPHY_BACKEND
-    )
+    kdf = PBKDF2HMAC(digest, dklen, salt, iterations)
     return kdf.derive(password)
 
 
@@ -150,7 +148,6 @@ class FernetBytes:
         encryptor = Cipher(
             algorithms.AES(force_bytes(self.key)),
             modes.CBC(iv),
-            backend=settings.CRYPTOGRAPHY_BACKEND,
         ).encryptor()
         ciphertext = encryptor.update(padded_data) + encryptor.finalize()
 
@@ -164,7 +161,6 @@ class FernetBytes:
         decryptor = Cipher(
             algorithms.AES(force_bytes(self.key)),
             modes.CBC(iv),
-            backend=settings.CRYPTOGRAPHY_BACKEND,
         ).decryptor()
         plaintext_padded = decryptor.update(ciphertext)
         try:
