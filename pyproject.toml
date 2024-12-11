@@ -2,9 +2,6 @@
 requires = ['Django', 'setuptools>=40.8.0', 'wheel']
 build-backend = 'setuptools.build_meta'
 
-[tool.black]
-target-version = ['py37']
-
 [tool.coverage.run]
 branch = true
 source = ['django_cryptography']
@@ -21,9 +18,6 @@ omit = ['docs/*', 'tests/*']
 
 [tool.django-stubs]
 django_settings_module = 'tests.settings'
-
-[tool.isort]
-profile = 'black'
 
 [tool.mypy]
 plugins = ['mypy_django_plugin.main']
@@ -49,7 +43,7 @@ select = [
 
 ]
 exclude = ["docs"]
-target-version = "py37"
+target-version = "py39"
 
 [tool.ruff.per-file-ignores]
 "tests/*" = ["ERA"]
@@ -60,10 +54,12 @@ legacy_tox_ini = """
 [tox]
 min_version = 4.0
 envlist =
-    {py37,py38,py39,py310}-django32,
-    {py38,py39,py310}-django41,
-    {py38,py39,py310,py311}-django42,
-    {py310,py311}-djangomain,
+    {py39,py310,py311,py312,py313}-django32,
+    {py39,py310,py311,py312,py313}-django41,
+    {py39,py310,py311,py312,py313}-django42,
+    {py310,py311,py312,py313}-django50,
+    {py310,py311,py312,py313}-django51,
+    {py310,py311,py312,py313}-djangomain,
 isolated_build = True
 
 [testenv]
@@ -72,6 +68,8 @@ deps =
     django32: Django>=3.2,<3.3
     django41: Django>=4.1,<4.2
     django42: Django>=4.2,<4.3
+    django50: Django>=5.0,<5.1
+    django51: Django>=5.1,<5.2
     djangomain: https://github.com/django/django/archive/main.tar.gz
 commands =
     {envpython} -m coverage run --context='{envname}' runtests.py {posargs}

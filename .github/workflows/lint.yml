@@ -17,7 +17,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           # Use the lowest version of Python supported
-          python-version: "3.7"
+          python-version: "3.9"
 
       - uses: actions/cache@v4
         with:
