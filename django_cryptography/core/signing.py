@@ -3,7 +3,7 @@ import datetime
 import struct
 import time
 import zlib
-from typing import Any, Optional, Type, Union
+from typing import Any, Optional, Union
 
 from cryptography.hazmat.primitives.hmac import HMAC
 from django.conf import settings
@@ -64,7 +64,7 @@ def dumps(
     obj: Any,
     key: Optional[Union[bytes, str]] = None,
     salt: str = "django.core.signing",
-    serializer: Type[Serializer] = JSONSerializer,
+    serializer: type[Serializer] = JSONSerializer,
     compress: bool = False,
 ) -> str:
     """
@@ -92,7 +92,7 @@ def loads(
     s: str,
     key: Optional[Union[bytes, str]] = None,
     salt: str = "django.core.signing",
-    serializer: Type[Serializer] = JSONSerializer,
+    serializer: type[Serializer] = JSONSerializer,
     max_age: Optional[Union[int, datetime.timedelta]] = None,
 ) -> Any:
     """
@@ -118,8 +118,8 @@ class Signer:
         self.sep = sep
         if _SEP_UNSAFE.match(self.sep):
             raise ValueError(
-                "Unsafe Signer separator: %r (cannot be empty or consist of "
-                "only A-z0-9-_=)" % sep,
+                f"Unsafe Signer separator: {sep!r} (cannot be empty or consist of "
+                "only A-z0-9-_=)",
             )
         self.salt = salt or f"{self.__class__.__module__}.{self.__class__.__name__}"
         self.algorithm = algorithm or "sha256"
@@ -134,16 +134,16 @@ class Signer:
 
     def unsign(self, signed_value: str) -> str:
         if self.sep not in signed_value:
-            raise BadSignature('No "%s" found in value' % self.sep)
+            raise BadSignature(f'No "{self.sep}" found in value')
         value, sig = signed_value.rsplit(self.sep, 1)
         if constant_time_compare(sig, self.signature(value)):
             return value
-        raise BadSignature('Signature "%s" does not match' % sig)
+        raise BadSignature(f'Signature "{sig}" does not match')
 
     def sign_object(
         self,
         obj: Any,
-        serializer: Type[Serializer] = JSONSerializer,
+        serializer: type[Serializer] = JSONSerializer,
         compress: bool = False,
     ) -> str:
         """
@@ -173,7 +173,7 @@ class Signer:
     def unsign_object(
         self,
         signed_obj: str,
-        serializer: Type[Serializer] = JSONSerializer,
+        serializer: type[Serializer] = JSONSerializer,
         **kwargs: Any,
     ) -> Any:
         # Signer.unsign() returns str but base64 and zlib compression operate
@@ -233,8 +233,8 @@ class BytesSigner:
             hasher = HASHES[self.algorithm]
         except KeyError as e:
             raise InvalidAlgorithm(
-                "%r is not an algorithm accepted by the cryptography module."
-                % algorithm
+                f"{algorithm!r} is not an algorithm accepted by the cryptography "
+                f"module."
             ) from e
 
         self._digest_size = hasher.digest_size
@@ -254,7 +254,7 @@ class BytesSigner:
         )
         if constant_time_compare(sig, self.signature(value)):
             return value
-        raise BadSignature('Signature "%r" does not match' % binascii.b2a_base64(sig))
+        raise BadSignature(f'Signature "{binascii.b2a_base64(sig)!r}" does not match')
 
 
 class FernetSigner:
@@ -272,8 +272,8 @@ class FernetSigner:
             hasher = HASHES[self.algorithm]
         except KeyError as e:
             raise InvalidAlgorithm(
-                "%r is not an algorithm accepted by the cryptography module."
-                % algorithm
+                f"{algorithm!r} is not an algorithm accepted by the cryptography "
+                f"module."
             ) from e
 
         self.hasher = hasher
@@ -317,4 +317,4 @@ class FernetSigner:
                 raise SignatureExpired(f"Signature age {age} > {max_age} seconds")
         if constant_time_compare(sig, self.signature(signed_value[:-d_size])):
             return value
-        raise BadSignature('Signature "%r" does not match' % binascii.b2a_base64(sig))
+        raise BadSignature(f'Signature "{binascii.b2a_base64(sig)!r}" does not match')

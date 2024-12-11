@@ -2,11 +2,9 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("fields", "0004_migrate_data"),
-    ]
+    dependencies = (("fields", "0004_migrate_data"),)
 
-    operations = [
+    operations = (
         migrations.RemoveField(
             model_name="encryptedcharmodel",
             name="old_field",
@@ -51,4 +49,4 @@ class Migration(migrations.Migration):
             model_name="otherencryptedtypesmodel",
             name="old_uuid",
         ),
-    ]
+    )

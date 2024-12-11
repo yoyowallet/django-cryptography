@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from appconf import AppConf
 from cryptography.hazmat.primitives import hashes
@@ -19,7 +19,7 @@ class CryptographyConf(AppConf):
     def configure_salt(self, value: Any) -> bytes:
         return force_bytes(value)
 
-    def configure(self) -> Dict[str, Any]:
+    def configure(self) -> dict[str, Any]:
         digest = self.configured_data["DIGEST"]
         salt = self.configured_data["SALT"]
         # Key Derivation Function

@@ -159,7 +159,7 @@ class TestChecks(TestCase):
 
 
 class TestMigrations(TransactionTestCase):
-    available_apps = ["tests.fields"]
+    available_apps = ("tests.fields",)
 
     def test_clone(self):
         field = encrypt(models.IntegerField())
@@ -241,9 +241,7 @@ class TestSerialization(TestCase):
         self.assertEqual(json.loads(self.test_data_integer), json.loads(data))
 
     def test_integer_loading(self):
-        instance = list(serializers.deserialize("json", self.test_data_integer))[
-            0
-        ].object
+        instance = next(serializers.deserialize("json", self.test_data_integer)).object
         self.assertEqual(42, instance.field)
 
     def test_char_dumping(self):
@@ -252,7 +250,7 @@ class TestSerialization(TestCase):
         self.assertEqual(json.loads(self.test_data_char), json.loads(data))
 
     def test_char_loading(self):
-        instance = list(serializers.deserialize("json", self.test_data_char))[0].object
+        instance = next(serializers.deserialize("json", self.test_data_char)).object
         self.assertEqual("Hello, world!", instance.field)
 
 

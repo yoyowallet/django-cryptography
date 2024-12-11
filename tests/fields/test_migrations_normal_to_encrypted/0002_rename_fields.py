@@ -2,11 +2,9 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("fields", "0001_initial"),
-    ]
+    dependencies = (("fields", "0001_initial"),)
 
-    operations = [
+    operations = (
         migrations.RenameField(
             model_name="encryptedcharmodel",
             old_name="field",
@@ -62,4 +60,4 @@ class Migration(migrations.Migration):
             old_name="uuid",
             new_name="old_uuid",
         ),
-    ]
+    )

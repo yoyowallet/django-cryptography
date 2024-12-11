@@ -70,7 +70,7 @@ def salted_hmac(
         hasher = HASHES[algorithm]
     except KeyError as e:
         raise InvalidAlgorithm(
-            f"{algorithm} is not an algorithm accepted by the cryptography module."
+            f"{algorithm!r} is not an algorithm accepted by the cryptography module."
         ) from e
 
     # We need to generate a derived key from our base key.  We can do this by

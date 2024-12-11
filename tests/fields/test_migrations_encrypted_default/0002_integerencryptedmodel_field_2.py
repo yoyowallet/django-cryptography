@@ -4,11 +4,9 @@ import django_cryptography.fields
 
 
 class Migration(migrations.Migration):
-    dependencies = [
-        ("fields", "0001_initial"),
-    ]
+    dependencies = (("fields", "0001_initial"),)
 
-    operations = [
+    operations = (
         migrations.AddField(
             model_name="integerencrypteddefaultmodel",
             name="field_2",
@@ -17,4 +15,4 @@ class Migration(migrations.Migration):
             ),
             preserve_default=False,
         ),
-    ]
+    )

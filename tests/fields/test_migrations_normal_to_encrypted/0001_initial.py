@@ -6,9 +6,9 @@ import django_cryptography.fields
 class Migration(migrations.Migration):
     initial = True
 
-    dependencies = []
+    dependencies = ()
 
-    operations = [
+    operations = (
         migrations.CreateModel(
             name="EncryptedCharModel",
             fields=[
@@ -155,4 +155,4 @@ class Migration(migrations.Migration):
                 ("field", django_cryptography.fields.PickledField()),
             ],
         ),
-    ]
+    )
