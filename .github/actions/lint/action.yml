@@ -1,0 +1,13 @@
+name: "Linting"
+runs:
+  using: "composite"
+  steps:
+  - uses: actions/checkout@v4.2.2
+
+  - name: Set up Python 3.9
+    uses: actions/setup-python@v5.3.0
+    with:
+      python-version: "3.9"
+
+  - name: pre-commit
+    uses: pre-commit/action@v3.0.1

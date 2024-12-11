@@ -43,10 +43,11 @@ typing-extensions = ">=3.7.4.3"
 [tool.poetry.extras]
 mypy = ["django-stubs", "mypy"]
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 coverage = {extras = ["toml"], version = "*"}
 django-stubs = "*"
 mypy = "*"
+tox = "^4.23.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -104,8 +105,8 @@ legacy_tox_ini = """
 [tox]
 min_version = 4.0
 envlist =
-    {py39,py310,py311,py312,py313}-django32,
-    {py39,py310,py311,py312,py313}-django41,
+    {py39,py310,py311,py312}-django32,
+    {py39,py310,py311,py312}-django41,
     {py39,py310,py311,py312,py313}-django42,
     {py310,py311,py312,py313}-django50,
     {py310,py311,py312,py313}-django51,

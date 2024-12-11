@@ -282,7 +282,6 @@ class FernetSigner:
         h = HMAC(
             force_bytes(self.key),
             self.hasher,
-            backend=settings.CRYPTOGRAPHY_BACKEND,  # type: ignore
         )
         h.update(force_bytes(value))
         return h.finalize()

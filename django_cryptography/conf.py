@@ -20,7 +20,7 @@ class CryptographyConf(AppConf):
         return force_bytes(value)
 
     def configure(self) -> Dict[str, Any]:
-        digest = self.configured_data["DIGEST"]()
+        digest = self.configured_data["DIGEST"]
         salt = self.configured_data["SALT"]
         # Key Derivation Function
         kdf = pbkdf2.PBKDF2HMAC(

@@ -75,7 +75,7 @@ def salted_hmac(
 
     # We need to generate a derived key from our base key.  We can do this by
     # passing the key_salt and our base key through a pseudo-random function.
-    digest = hashes.Hash(hasher, backend=settings.CRYPTOGRAPHY_BACKEND)
+    digest = hashes.Hash(hasher)
     digest.update(key_salt + secret)
     key = digest.finalize()
 
@@ -83,7 +83,7 @@ def salted_hmac(
     # line is redundant and could be replaced by key = key_salt + secret, since
     # the hmac module does the same thing for keys longer than the block size.
     # However, we need to ensure that we *always* do this.
-    h = HMAC(key, hasher, backend=settings.CRYPTOGRAPHY_BACKEND)
+    h = HMAC(key, hasher)
     h.update(force_bytes(value))
     return h
 
@@ -113,7 +113,7 @@ def pbkdf2(
     password = force_bytes(password)
     salt = force_bytes(salt)
     kdf = PBKDF2HMAC(
-        digest, dklen, salt, iterations, backend=settings.CRYPTOGRAPHY_BACKEND
+        digest, dklen, salt, iterations
     )
     return kdf.derive(password)
 
@@ -150,7 +150,6 @@ class FernetBytes:
         encryptor = Cipher(
             algorithms.AES(force_bytes(self.key)),
             modes.CBC(iv),
-            backend=settings.CRYPTOGRAPHY_BACKEND,
         ).encryptor()
         ciphertext = encryptor.update(padded_data) + encryptor.finalize()
 
@@ -164,7 +163,6 @@ class FernetBytes:
         decryptor = Cipher(
             algorithms.AES(force_bytes(self.key)),
             modes.CBC(iv),
-            backend=settings.CRYPTOGRAPHY_BACKEND,
         ).decryptor()
         plaintext_padded = decryptor.update(ciphertext)
         try:
