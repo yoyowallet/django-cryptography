@@ -101,9 +101,9 @@ class TestSerialization(TestCase):
             '[{"fields": {"field": "gANdcQAoSwFLAk5lLg=="}, '
             '"model": "fields.pickledmodel", "pk": null}]'
         )
-        if pickle.HIGHEST_PROTOCOL < 5
+        if pickle.HIGHEST_PROTOCOL >= 5
+        # Python 3.8
         else (
-            # Python 3.8
             '[{"fields": {"field": "gASVCgAAAAAAAABdlChLAUsCTmUu"}, '
             '"model": "fields.pickledmodel", "pk": null}]'
         )
@@ -115,7 +115,7 @@ class TestSerialization(TestCase):
         self.assertEqual(json.loads(self.test_data), json.loads(data))
 
     def test_loading(self):
-        instance = list(serializers.deserialize("json", self.test_data))[0].object
+        instance = next(serializers.deserialize("json", self.test_data)).object
         self.assertEqual([1, 2, None], instance.field)
 
 

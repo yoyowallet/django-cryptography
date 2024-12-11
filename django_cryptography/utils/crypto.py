@@ -2,7 +2,7 @@ import base64
 import os
 import time
 from binascii import Error
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
 from cryptography.hazmat.primitives import constant_time, hashes, padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -28,7 +28,7 @@ class InvalidToken(Exception):
     pass
 
 
-HASHES: Dict[Algorithm, hashes.HashAlgorithm] = {
+HASHES: dict[Algorithm, hashes.HashAlgorithm] = {
     "blake2b": hashes.BLAKE2b(64),
     "blake2s": hashes.BLAKE2s(32),
     "md5": hashes.MD5(),
@@ -70,7 +70,7 @@ def salted_hmac(
         hasher = HASHES[algorithm]
     except KeyError as e:
         raise InvalidAlgorithm(
-            "%r is not an algorithm accepted by the cryptography module." % algorithm
+            f"{algorithm} is not an algorithm accepted by the cryptography module."
         ) from e
 
     # We need to generate a derived key from our base key.  We can do this by
@@ -112,9 +112,7 @@ def pbkdf2(
     dklen = dklen or digest.digest_size
     password = force_bytes(password)
     salt = force_bytes(salt)
-    kdf = PBKDF2HMAC(
-        digest, dklen, salt, iterations
-    )
+    kdf = PBKDF2HMAC(digest, dklen, salt, iterations)
     return kdf.derive(password)
 
 

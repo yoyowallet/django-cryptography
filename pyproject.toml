@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django-cryptography"
-version = "0.1.0"  # Replace with the actual version
+version = "0.1.0" # Replace with the actual version
 description = "Easily encrypt data in Django"
 authors = ["George Marshall <george@georgemarshall.name>"]
 license = "BSD-3-Clause"
@@ -44,7 +44,7 @@ typing-extensions = ">=3.7.4.3"
 mypy = ["django-stubs", "mypy"]
 
 [tool.poetry.group.dev.dependencies]
-coverage = {extras = ["toml"], version = "*"}
+coverage = { extras = ["toml"], version = "*" }
 django-stubs = "*"
 mypy = "*"
 tox = "^4.23.2"
